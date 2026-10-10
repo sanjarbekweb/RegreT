@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   FolderGit2,
@@ -30,21 +30,19 @@ export default function ProjectsPage() {
   const [techStack, setTechStack] = useState('');
   const [screenshotUrl, setScreenshotUrl] = useState('');
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     const projs = storage.getProjects();
     setProjects(projs);
     setActivities(storage.getActivities());
-    if (projs.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projs[0].id);
-    }
-  };
+    setSelectedProjectId((prev) => (prev && projs.some((p) => p.id === prev) ? prev : (projs.length > 0 ? projs[0].id : '')));
+  }, []);
 
   useEffect(() => {
     loadData();
     const handleUpdate = () => loadData();
     window.addEventListener('regret_data_updated', handleUpdate);
     return () => window.removeEventListener('regret_data_updated', handleUpdate);
-  }, []);
+  }, [loadData]);
 
   const handleDeleteProject = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

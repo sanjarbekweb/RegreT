@@ -248,7 +248,7 @@ export default function VocabularyPage() {
 
               {word.exampleSentence && (
                 <div className="bg-elevated border-l-2 border-primary/50 p-2 rounded-r text-[11px] text-muted italic">
-                  "{word.exampleSentence}"
+                  &quot;{word.exampleSentence}&quot;
                 </div>
               )}
             </div>

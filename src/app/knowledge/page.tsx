@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Brain,
   Plus,
@@ -36,14 +36,6 @@ export default function KnowledgeVaultPage() {
   // Active Quiz or Flashcard Mode
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [activeDeck, setActiveDeck] = useState<Flashcard[] | null>(null);
-
-  const loadDocs = () => {
-    const list = storage.getKnowledgeDocs();
-    setDocs(list);
-    if (list.length > 0 && !selectedDoc) {
-      setSelectedDoc(list[0]);
-    }
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,9 +75,18 @@ export default function KnowledgeVaultPage() {
     }
   };
 
+  const loadDocs = useCallback(() => {
+    const list = storage.getKnowledgeDocs();
+    setDocs(list);
+    setSelectedDoc((prev) => (prev && list.some((d) => d.id === prev.id) ? prev : (list.length > 0 ? list[0] : null)));
+  }, []);
+
   useEffect(() => {
     loadDocs();
-  }, []);
+    const handleUpdate = () => loadDocs();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
+  }, [loadDocs]);
 
   const handleCreateDocument = async (e: React.FormEvent) => {
     e.preventDefault();

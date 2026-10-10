@@ -36,43 +36,78 @@ export default function ContributionHeatmap({
     return map;
   }, [filteredActivities]);
 
-  // Generate grid of weeks ending today
+  // Generate grid of weeks ending with the current week (aligned to Monday)
   const { grid, stats } = useMemo(() => {
     const today = new Date();
-    const totalDays = weeksToShow * 7;
-    const days: { date: Date; dateStr: string; count: number; activities: Activity[] }[] = [];
+    const todayStr = today.toISOString().split('T')[0];
+    const todayUtc = new Date(todayStr + 'T00:00:00Z');
 
-    // Calculate start date so that today is at the end
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - totalDays + 1);
+    // Day of week where Monday is 0 and Sunday is 6
+    const todayDayOfWeek = (todayUtc.getUTCDay() + 6) % 7;
 
-    for (let i = 0; i < totalDays; i++) {
-      const current = new Date(startDate);
-      current.setDate(startDate.getDate() + i);
-      const dateStr = current.toISOString().split('T')[0];
-      const dayActs = dateMap.get(dateStr) || [];
-      days.push({
-        date: current,
-        dateStr,
-        count: dayActs.length,
-        activities: dayActs,
-      });
-    }
+    // Start of the current week (Monday)
+    const currentWeekMonday = new Date(todayUtc);
+    currentWeekMonday.setUTCDate(todayUtc.getUTCDate() - todayDayOfWeek);
 
-    // Split into weeks of 7 days
-    const weeks: typeof days[] = [];
+    // Start of the grid (Monday, weeksToShow - 1 weeks prior)
+    const gridStartMonday = new Date(currentWeekMonday);
+    gridStartMonday.setUTCDate(currentWeekMonday.getUTCDate() - (weeksToShow - 1) * 7);
+
+    const weeks: {
+      date: Date;
+      dateStr: string;
+      count: number;
+      activities: Activity[];
+      isFuture: boolean;
+      isToday: boolean;
+    }[][] = [];
+
+    const pastAndTodayDays: { dateStr: string; count: number }[] = [];
+
     for (let w = 0; w < weeksToShow; w++) {
-      weeks.push(days.slice(w * 7, (w + 1) * 7));
+      const weekDays: {
+        date: Date;
+        dateStr: string;
+        count: number;
+        activities: Activity[];
+        isFuture: boolean;
+        isToday: boolean;
+      }[] = [];
+
+      for (let d = 0; d < 7; d++) {
+        const dayDate = new Date(gridStartMonday);
+        dayDate.setUTCDate(gridStartMonday.getUTCDate() + w * 7 + d);
+        const dateStr = dayDate.toISOString().split('T')[0];
+
+        const isToday = dateStr === todayStr;
+        const isFuture = dateStr > todayStr;
+        const dayActs = isFuture ? [] : (dateMap.get(dateStr) || []);
+
+        const dayItem = {
+          date: dayDate,
+          dateStr,
+          count: dayActs.length,
+          activities: dayActs,
+          isFuture,
+          isToday,
+        };
+
+        weekDays.push(dayItem);
+        if (!isFuture) {
+          pastAndTodayDays.push({ dateStr, count: dayActs.length });
+        }
+      }
+      weeks.push(weekDays);
     }
 
-    // Calculate streaks
+    // Calculate streaks across valid past and today dates
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
     let totalActiveDays = 0;
 
-    for (let i = 0; i < days.length; i++) {
-      if (days[i].count > 0) {
+    for (let i = 0; i < pastAndTodayDays.length; i++) {
+      if (pastAndTodayDays[i].count > 0) {
         totalActiveDays++;
         tempStreak++;
         if (tempStreak > longestStreak) longestStreak = tempStreak;
@@ -81,12 +116,12 @@ export default function ContributionHeatmap({
       }
     }
 
-    // Check current streak from end backwards
-    for (let i = days.length - 1; i >= 0; i--) {
-      if (days[i].count > 0) {
+    // Check current streak from today backwards
+    for (let i = pastAndTodayDays.length - 1; i >= 0; i--) {
+      if (pastAndTodayDays[i].count > 0) {
         currentStreak++;
-      } else if (i === days.length - 1) {
-        // Today has 0 so far, check yesterday
+      } else if (i === pastAndTodayDays.length - 1) {
+        // Today has 0 so far, can count previous days if active
         continue;
       } else {
         break;
@@ -139,7 +174,7 @@ export default function ContributionHeatmap({
           >
             All Tracks
           </button>
-          {INITIAL_CATEGORIES.slice(0, 5).map((cat) => (
+          {INITIAL_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -189,6 +224,14 @@ export default function ContributionHeatmap({
           {grid.map((week, wIdx) => (
             <div key={wIdx} className="flex flex-col gap-1.5">
               {week.map((day) => {
+                if (day.isFuture) {
+                  return (
+                    <div
+                      key={day.dateStr}
+                      className="w-3.5 h-3.5 rounded-sm border border-transparent opacity-0 pointer-events-none"
+                    />
+                  );
+                }
                 const isSelected = activeDate === day.dateStr;
                 return (
                   <button
@@ -197,12 +240,14 @@ export default function ContributionHeatmap({
                       setActiveDate(day.dateStr);
                       if (onSelectDate) onSelectDate(day.dateStr, day.activities);
                     }}
-                    title={`${day.dateStr}: ${day.count} activities logged`}
+                    title={`${day.dateStr}${day.isToday ? ' (Today)' : ''}: ${day.count} activities logged`}
                     className={`w-3.5 h-3.5 rounded-sm border transition-all ${getColorClass(
                       day.count
                     )} ${
                       isSelected
                         ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                        : day.isToday
+                        ? 'ring-1 ring-primary/60'
                         : 'hover:opacity-80'
                     }`}
                   />

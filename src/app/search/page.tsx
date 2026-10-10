@@ -23,13 +23,20 @@ export default function UniversalSearchPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [countdowns, setCountdowns] = useState<Countdown[]>([]);
 
-  useEffect(() => {
+  const loadData = React.useCallback(() => {
     setActivities(storage.getActivities());
     setKnowledgeDocs(storage.getKnowledgeDocs());
     setVocabulary(storage.getVocabulary());
     setProjects(storage.getProjects());
     setCountdowns(storage.getCountdowns());
   }, []);
+
+  useEffect(() => {
+    loadData();
+    const handleUpdate = () => loadData();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
+  }, [loadData]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -153,7 +160,7 @@ export default function UniversalSearchPage() {
         </div>
       ) : results.total === 0 ? (
         <div className="bg-surface border border-border rounded-lg p-10 text-center text-xs text-muted">
-          No records match "{query}". Try a different keyword or category.
+          No records match &quot;{query}&quot;. Try a different keyword or category.
         </div>
       ) : (
         <div className="space-y-6">

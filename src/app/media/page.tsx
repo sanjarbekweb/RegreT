@@ -12,6 +12,7 @@ import {
   Quote,
   Maximize2,
   Calendar,
+  Trash2,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Activity } from '../../lib/types';
@@ -26,7 +27,21 @@ export default function MediaCulturePage() {
 
   useEffect(() => {
     loadData();
+    const handleUpdate = () => loadData();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
+
+  const handleDeleteItem = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm('Permanently remove this media record?')) {
+      storage.deleteActivity(id);
+      loadData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
+    }
+  };
 
   // Filter activities relevant to media, entertainment, reading, music, f1
   const mediaItems = activities.filter(
@@ -106,9 +121,18 @@ export default function MediaCulturePage() {
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated border border-border text-primary uppercase font-semibold">
                   {item.categoryId}
                 </span>
-                <span className="text-xs font-mono text-muted">
-                  {item.startedAt.split('T')[0]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted">
+                    {item.startedAt.split('T')[0]}
+                  </span>
+                  <button
+                    onClick={(e) => handleDeleteItem(item.id, e)}
+                    className="p-1 rounded text-muted hover:text-danger hover:bg-elevated transition-colors"
+                    title="Delete media record"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <h3 className="font-bold text-base text-foreground">{item.title}</h3>
@@ -123,7 +147,7 @@ export default function MediaCulturePage() {
                   <div className="flex items-start gap-2">
                     <Quote className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <div className="italic text-foreground leading-relaxed">
-                      "{item.bookQuote.quote}"
+                      &quot;{item.bookQuote.quote}&quot;
                     </div>
                   </div>
                   <div className="text-[11px] font-mono text-muted pl-6">

@@ -56,6 +56,9 @@ export default function ConsistencyCalendarPage() {
   const handleToggleHabit = (habitId: string, dateStr: string) => {
     storage.toggleHabitCompletion(habitId, dateStr);
     setCompletions(storage.getHabitCompletions());
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('regret_data_updated'));
+    }
   };
 
   const isHabitCompleted = (habitId: string, dateStr: string) => {
@@ -81,6 +84,9 @@ export default function ConsistencyCalendarPage() {
     setHabits(updated);
     setNewHabitName('');
     setShowAddHabit(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('regret_data_updated'));
+    }
   };
 
   // Generate last 7 days for the weekly adherence matrix

@@ -53,6 +53,9 @@ export default function DashboardOverview() {
   const handleToggleHabit = (habitId: string) => {
     storage.toggleHabitCompletion(habitId, todayStr);
     setCompletions(storage.getHabitCompletions());
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('regret_data_updated'));
+    }
   };
 
   const isHabitCompletedToday = (habitId: string) => {
@@ -171,7 +174,7 @@ export default function DashboardOverview() {
           <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-semibold text-xs text-foreground uppercase tracking-wider font-mono">
-                Today's Daily Routine ({todayStr})
+                Today&apos;s Daily Routine ({todayStr})
               </h3>
               <Link href="/calendar" className="text-xs text-primary hover:underline font-mono">
                 All Habits
@@ -289,7 +292,7 @@ export default function DashboardOverview() {
                   {/* Book Quote if any */}
                   {act.bookQuote && (
                     <div className="bg-elevated border-l-2 border-primary p-3 rounded-r text-xs space-y-1">
-                      <div className="italic text-foreground">"{act.bookQuote.quote}"</div>
+                      <div className="italic text-foreground">&quot;{act.bookQuote.quote}&quot;</div>
                       <div className="text-[11px] font-mono text-muted">
                         — {act.bookQuote.author}, {act.bookQuote.bookTitle} (p. {act.bookQuote.pageNumber})
                       </div>

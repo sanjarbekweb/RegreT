@@ -44,6 +44,9 @@ export default function SettingsBackupPage() {
 
   useEffect(() => {
     loadStats();
+    const handleUpdate = () => loadStats();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
 
   const handleSaveApiKey = (e: React.FormEvent) => {

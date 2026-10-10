@@ -1083,6 +1083,8 @@ class StorageService {
     if (doc && doc.flashcardIds) {
       doc.flashcardIds.forEach(fcId => this.deleteFlashcard(fcId));
     }
+    const relatedCards = this.getFlashcards().filter(c => c.topicId === id);
+    relatedCards.forEach(c => this.deleteFlashcard(c.id));
     const list = this.getKnowledgeDocs().filter(d => d.id !== id);
     this.saveKnowledgeDocs(list);
   }

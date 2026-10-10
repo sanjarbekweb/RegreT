@@ -41,6 +41,9 @@ export default function TimelinePage() {
     if (confirm('Permanently remove this activity record?')) {
       storage.deleteActivity(id);
       loadActivities();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
     }
   };
 
@@ -243,7 +246,7 @@ export default function TimelinePage() {
                     {/* Book Quote if any */}
                     {act.bookQuote && (
                       <div className="bg-elevated border-l-2 border-primary p-3 rounded-r text-xs space-y-1">
-                        <div className="italic text-foreground">"{act.bookQuote.quote}"</div>
+                        <div className="italic text-foreground">&quot;{act.bookQuote.quote}&quot;</div>
                         <div className="text-[11px] font-mono text-muted flex items-center gap-1.5">
                           <BookOpen className="w-3 h-3 text-primary" />
                           <span>
