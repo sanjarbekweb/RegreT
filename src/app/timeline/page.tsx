@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   Search,
@@ -96,44 +97,44 @@ export default function TimelinePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
         <div>
-          <div className="text-xs font-mono text-muted uppercase tracking-wider">
+          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Chronological Life Record
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
             Activity Timeline
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
             Browse your daily routines, coding sprints, study sessions, workouts, and media logs.
           </p>
         </div>
-        <Link href="/capture" className="btn-primary text-xs py-2 px-4 self-start sm:self-auto">
-          <Plus className="w-4 h-4" />
+        <Link href="/capture" className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2">
+          <Plus className="w-4 h-4 stroke-[3]" />
           <span>New Entry</span>
         </Link>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
+      {/* Filter and Search Bar (Bento style) */}
+      <div className="bento-card p-5 space-y-3.5 bg-white dark:bg-[#131A29]">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-muted absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search across title, notes, quotes, or tags..."
-              className="w-full bg-elevated border border-border rounded pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-primary"
+              className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-full pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime font-sans"
             />
           </div>
 
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value as any)}
-            className="bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+            className="bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-full px-4 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-lime font-display font-semibold"
           >
             <option value="all">All Categories</option>
             {INITIAL_CATEGORIES.map((cat) => (
@@ -146,25 +147,25 @@ export default function TimelinePage() {
 
         {/* Tag Cloud Filter */}
         {allTags.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 text-xs">
-            <span className="text-[11px] font-mono text-muted mr-1">Tags:</span>
+          <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-1 text-xs">
+            <span className="text-[11px] font-display font-bold text-slate-400 mr-1">Filter Tags:</span>
             {selectedTag && (
               <button
                 onClick={() => setSelectedTag(null)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary text-white text-[11px] font-mono"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime text-slate-950 text-xs font-display font-bold shadow-sm"
               >
                 <span>#{selectedTag}</span>
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5 stroke-[3]" />
               </button>
             )}
             {allTags.slice(0, 10).map((tag) => (
               <button
                 key={tag}
                 onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                className={`px-2 py-0.5 rounded font-mono text-[11px] transition-colors ${
+                className={`px-3 py-1 rounded-full font-mono text-[11px] transition-all font-medium ${
                   selectedTag === tag
-                    ? 'bg-primary text-white border border-primary'
-                    : 'bg-elevated text-muted hover:text-foreground border border-border'
+                    ? 'bg-lime text-slate-950 font-bold border border-black/5'
+                    : 'bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 #{tag}
@@ -176,9 +177,11 @@ export default function TimelinePage() {
 
       {/* Timeline Stream by Date */}
       {Object.keys(groupedByDate).length === 0 ? (
-        <div className="bg-surface border border-border rounded-lg p-12 text-center text-muted text-xs space-y-2">
-          <Clock className="w-8 h-8 text-muted/40 mx-auto" />
-          <p>No activity records found matching the current filters.</p>
+        <div className="bento-card p-12 text-center text-slate-400 text-xs space-y-3 bg-white dark:bg-[#131A29]">
+          <Clock className="w-10 h-10 text-slate-300 mx-auto" />
+          <p className="font-display font-bold text-slate-700 dark:text-slate-300">
+            No activity records found matching the current filters.
+          </p>
           <Link href="/capture" className="btn-secondary text-xs mt-2 inline-flex">
             Create an Activity
           </Link>
@@ -186,50 +189,53 @@ export default function TimelinePage() {
       ) : (
         <div className="space-y-8">
           {Object.entries(groupedByDate).map(([dateStr, items]) => (
-            <div key={dateStr} className="space-y-3">
+            <div key={dateStr} className="space-y-4">
               {/* Date Header Stamp */}
               <div className="flex items-center gap-3">
-                <div className="h-px bg-border flex-1" />
-                <div className="flex items-center gap-2 bg-elevated border border-border px-3 py-1 rounded-full text-xs font-mono text-foreground font-semibold">
-                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                <div className="h-px bg-slate-200 dark:bg-white/[0.08] flex-1" />
+                <div className="flex items-center gap-2 bg-white dark:bg-[#131A29] border border-slate-200/80 dark:border-white/[0.08] px-4 py-1.5 rounded-full text-xs font-display text-slate-900 dark:text-white font-bold shadow-sm">
+                  <Calendar className="w-3.5 h-3.5 text-iris" />
                   <span>{formatDateHeader(dateStr)}</span>
-                  <span className="text-[11px] text-muted">({items.length} records)</span>
+                  <span className="text-[11px] text-slate-400 font-mono font-normal">
+                    ({items.length} records)
+                  </span>
                 </div>
-                <div className="h-px bg-border flex-1" />
+                <div className="h-px bg-slate-200 dark:bg-white/[0.08] flex-1" />
               </div>
 
               {/* Day's Activities List */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {items.map((act) => (
-                  <div
+                  <motion.div
                     key={act.id}
-                    className="bg-surface border border-border rounded-lg p-4 sm:p-5 space-y-3 hover:border-primary/40 transition-colors"
+                    whileHover={{ y: -2 }}
+                    className="bento-card p-5 sm:p-6 space-y-3.5 bg-white dark:bg-[#131A29]"
                   >
                     {/* Header Row */}
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-elevated border border-border text-primary font-medium">
+                          <span className="text-xs font-display font-bold px-2.5 py-0.5 rounded-full bg-lime text-slate-950">
                             {act.categoryId}
                           </span>
-                          <span className="text-xs font-mono text-muted">
+                          <span className="text-xs font-mono text-slate-400">
                             {act.startedAt.split('T')[1]?.slice(0, 5)}
                             {act.endedAt ? ` - ${act.endedAt.split('T')[1]?.slice(0, 5)}` : ''}
                           </span>
                           {act.source === 'timer' && (
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 bg-elevated border border-border text-muted">
+                            <span className="text-[10px] font-display font-semibold px-2 py-0.5 rounded-full bg-iris/10 text-iris border border-iris/20">
                               Timed
                             </span>
                           )}
                         </div>
-                        <h3 className="font-semibold text-sm sm:text-base text-foreground mt-1.5">
+                        <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white mt-1.5">
                           {act.title}
                         </h3>
                       </div>
 
                       <button
                         onClick={() => handleDelete(act.id)}
-                        className="p-1.5 rounded text-muted/60 hover:text-danger hover:bg-elevated transition-colors"
+                        className="p-1.5 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
                         title="Delete record"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -238,17 +244,19 @@ export default function TimelinePage() {
 
                     {/* Description */}
                     {act.description && (
-                      <p className="text-xs text-muted leading-relaxed whitespace-pre-line">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-sans">
                         {act.description}
                       </p>
                     )}
 
                     {/* Book Quote if any */}
                     {act.bookQuote && (
-                      <div className="bg-elevated border-l-2 border-primary p-3 rounded-r text-xs space-y-1">
-                        <div className="italic text-foreground">&quot;{act.bookQuote.quote}&quot;</div>
-                        <div className="text-[11px] font-mono text-muted flex items-center gap-1.5">
-                          <BookOpen className="w-3 h-3 text-primary" />
+                      <div className="bg-purple-50 dark:bg-purple-950/20 border-l-4 border-iris p-3.5 rounded-r-2xl text-xs space-y-1">
+                        <div className="italic text-purple-950 dark:text-purple-200 font-serif">
+                          &quot;{act.bookQuote.quote}&quot;
+                        </div>
+                        <div className="text-[11px] text-purple-700 dark:text-purple-400 font-sans font-medium flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-iris" />
                           <span>
                             — {act.bookQuote.author}, {act.bookQuote.bookTitle}{' '}
                             {act.bookQuote.pageNumber ? `(p. ${act.bookQuote.pageNumber})` : ''}
@@ -259,19 +267,19 @@ export default function TimelinePage() {
 
                     {/* Media details if any */}
                     {act.mediaDetails && (
-                      <div className="bg-elevated border border-border rounded p-3 text-xs flex items-center justify-between">
+                      <div className="rounded-2xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-800/30 p-3.5 text-xs flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Film className="w-4 h-4 text-warning" />
-                          <span className="font-medium text-foreground">
+                          <Film className="w-4 h-4 text-coral" />
+                          <span className="font-display font-bold text-slate-900 dark:text-white">
                             {act.mediaDetails.title}
                           </span>
                           {act.mediaDetails.authorOrArtist && (
-                            <span className="text-muted text-[11px]">
+                            <span className="text-slate-500 text-[11px]">
                               by {act.mediaDetails.authorOrArtist}
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-border text-warning">
+                        <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-white dark:bg-white/[0.08] text-coral-dark dark:text-coral border border-coral/20">
                           Rating: {act.mediaDetails.rating}/5
                         </span>
                       </div>
@@ -279,24 +287,24 @@ export default function TimelinePage() {
 
                     {/* Photo Attachments */}
                     {act.attachments && act.attachments.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
                         {act.attachments.map((att) => (
                           <div
                             key={att.id}
                             onClick={() => setPreviewPhoto(att)}
-                            className="relative rounded overflow-hidden border border-border bg-black group cursor-pointer"
+                            className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/[0.08] bg-black group cursor-pointer"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={att.url}
                               alt={att.caption || 'Activity media'}
-                              className="w-full h-32 object-cover object-center group-hover:scale-105 transition-transform"
+                              className="w-full h-32 object-cover object-center group-hover:scale-105 transition-transform duration-300"
                             />
-                            <div className="absolute top-2 right-2 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-950/60 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                               <Maximize2 className="w-3 h-3" />
                             </div>
                             {att.caption && (
-                              <div className="absolute bottom-0 inset-x-0 bg-black/80 px-2 py-1 text-[10px] text-foreground truncate">
+                              <div className="absolute bottom-0 inset-x-0 bg-slate-950/80 px-2.5 py-1 text-[10px] text-white truncate">
                                 {att.caption}
                               </div>
                             )}
@@ -306,15 +314,15 @@ export default function TimelinePage() {
                     )}
 
                     {/* Footer Tags & Integrations */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40">
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
                       {act.githubRepo && (
-                        <span className="text-[11px] font-mono text-muted flex items-center gap-1 bg-elevated px-2 py-0.5 rounded border border-border">
-                          <FolderGit2 className="w-3 h-3 text-primary" />
+                        <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 flex items-center gap-1.5 bg-slate-100 dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200/60 dark:border-white/[0.08]">
+                          <FolderGit2 className="w-3 h-3 text-iris" />
                           {act.githubRepo}
                         </span>
                       )}
                       {act.githubCommit && (
-                        <span className="text-[11px] font-mono text-muted bg-elevated px-2 py-0.5 rounded border border-border">
+                        <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200/60 dark:border-white/[0.08]">
                           {act.githubCommit}
                         </span>
                       )}
@@ -323,7 +331,7 @@ export default function TimelinePage() {
                           href={act.vercelUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[11px] font-mono text-primary flex items-center gap-1 bg-elevated px-2 py-0.5 rounded border border-border hover:underline"
+                          className="text-[11px] font-mono text-iris flex items-center gap-1.5 bg-slate-100 dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200/60 dark:border-white/[0.08] hover:underline"
                         >
                           <ExternalLink className="w-3 h-3" />
                           Vercel
@@ -333,13 +341,13 @@ export default function TimelinePage() {
                         <button
                           key={t}
                           onClick={() => setSelectedTag(t)}
-                          className="text-[10px] font-mono text-muted hover:text-primary"
+                          className="text-[10px] font-mono text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         >
                           #{t}
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -348,40 +356,45 @@ export default function TimelinePage() {
       )}
 
       {/* Photo Lightbox Modal */}
-      {previewPhoto && (
-        <div
-          onClick={() => setPreviewPhoto(null)}
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer"
-        >
+      <AnimatePresence>
+        {previewPhoto && (
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface border border-border rounded-lg max-w-3xl w-full overflow-hidden p-2 space-y-2 cursor-default"
+            onClick={() => setPreviewPhoto(null)}
+            className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
           >
-            <div className="flex justify-between items-center px-2 py-1">
-              <span className="text-xs font-mono text-muted">{previewPhoto.originalName}</span>
-              <button
-                onClick={() => setPreviewPhoto(null)}
-                className="text-muted hover:text-foreground p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="relative bg-black rounded max-h-[75vh] flex items-center justify-center overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewPhoto.url}
-                alt="Enlarged preview"
-                className="max-h-[75vh] w-auto object-contain"
-              />
-            </div>
-            {previewPhoto.caption && (
-              <div className="p-2 text-xs text-foreground font-medium">
-                {previewPhoto.caption}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bento-card max-w-3xl w-full overflow-hidden p-3 space-y-2 cursor-default bg-white dark:bg-[#131A29]"
+            >
+              <div className="flex justify-between items-center px-2 py-1">
+                <span className="text-xs font-mono text-slate-400">{previewPhoto.originalName}</span>
+                <button
+                  onClick={() => setPreviewPhoto(null)}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            )}
+              <div className="relative bg-black rounded-2xl max-h-[75vh] flex items-center justify-center overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewPhoto.url}
+                  alt="Enlarged preview"
+                  className="max-h-[75vh] w-auto object-contain"
+                />
+              </div>
+              {previewPhoto.caption && (
+                <div className="p-3 text-xs text-slate-900 dark:text-white font-medium">
+                  {previewPhoto.caption}
+                </div>
+              )}
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

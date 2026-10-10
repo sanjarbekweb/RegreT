@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Hourglass,
   Plus,
@@ -11,6 +12,7 @@ import {
   AlertTriangle,
   Clock,
   Trash2,
+  Check,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Countdown } from '../../lib/types';
@@ -113,69 +115,72 @@ export default function CountdownsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
         <div>
-          <div className="text-xs font-mono text-muted uppercase tracking-wider">
+          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Critical Deadlines & Timelines
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
             Countdowns & Milestones
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
             Real-time countdown clocks for university applications, exams, competitions, and project releases.
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary text-xs py-2 px-4 self-start sm:self-auto"
+          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[3]" />
           <span>Add Deadline</span>
         </button>
       </div>
 
-      {/* Countdown Cards Grid */}
+      {/* Countdown Cards Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {sortedCountdowns.map((cd) => {
           const time = calculateTimeBreakdown(cd.targetDate);
           return (
-            <div
+            <motion.div
               key={cd.id}
-              className="bg-surface border border-border rounded-lg p-5 space-y-4 hover:border-primary/40 transition-colors flex flex-col justify-between"
+              whileHover={{ y: -3 }}
+              className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29] flex flex-col justify-between"
             >
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {/* Meta Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated border border-border text-primary uppercase font-semibold">
+                      <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200 uppercase">
                         {cd.category}
                       </span>
                       <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase font-semibold ${
+                        className={`text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full uppercase ${
                           cd.priority === 'urgent'
-                            ? 'bg-danger/20 border-danger/40 text-danger'
+                            ? 'bg-coral/15 text-coral-dark dark:text-coral border border-coral/30'
                             : cd.priority === 'high'
-                            ? 'bg-warning/20 border-warning/40 text-warning'
-                            : 'bg-elevated border-border text-muted'
+                            ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
+                            : 'bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'
                         }`}
                       >
                         {cd.priority}
                       </span>
                     </div>
-                    <h3 className="font-bold text-base text-foreground mt-2">{cd.title}</h3>
+                    <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+                      {cd.title}
+                    </h3>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {cd.targetUrl && (
                       <a
                         href={cd.targetUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1.5 rounded bg-elevated border border-border text-muted hover:text-primary transition-colors"
-                        title="Open application portal"
+                        className="p-2 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-iris transition-colors"
+                        title="Open portal"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -183,7 +188,7 @@ export default function CountdownsPage() {
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCountdown(cd.id, e)}
-                      className="p-1.5 rounded bg-elevated border border-border text-muted hover:text-danger hover:border-danger/40 transition-colors"
+                      className="p-2 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
                       title="Delete Deadline"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -191,59 +196,61 @@ export default function CountdownsPage() {
                   </div>
                 </div>
 
-                {/* Live Countdown Clock Ticker */}
-                <div className="grid grid-cols-4 gap-2 bg-elevated border border-border rounded p-3 text-center">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+                {/* Live Countdown Clock Ticker (Image 4 Virage.ai Bento Ticker Style) */}
+                <div className="grid grid-cols-4 gap-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.06] rounded-2xl p-3.5 text-center">
+                  <div className="p-1">
+                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
                       {time.days}
                     </div>
-                    <div className="text-[10px] font-mono text-muted uppercase">Days</div>
+                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Days</div>
                   </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+                  <div className="p-1">
+                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
                       {time.hours}
                     </div>
-                    <div className="text-[10px] font-mono text-muted uppercase">Hours</div>
+                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Hours</div>
                   </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+                  <div className="p-1">
+                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
                       {time.minutes}
                     </div>
-                    <div className="text-[10px] font-mono text-muted uppercase">Mins</div>
+                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Mins</div>
                   </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono text-primary">
+                  <div className="p-1">
+                    <div className="text-2xl sm:text-3xl font-display font-black text-iris dark:text-lime">
                       {time.seconds}
                     </div>
-                    <div className="text-[10px] font-mono text-muted uppercase">Secs</div>
+                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Secs</div>
                   </div>
                 </div>
 
                 {cd.description && (
-                  <p className="text-xs text-muted leading-relaxed">{cd.description}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans">{cd.description}</p>
                 )}
 
                 {/* Requirements Checklist */}
                 {cd.checklist && cd.checklist.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <div className="text-[11px] font-mono text-muted uppercase">
+                  <div className="space-y-2 pt-1">
+                    <div className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-wider">
                       Action Checklist:
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {cd.checklist.map((item) => (
                         <button
                           key={item.id}
                           onClick={() => handleToggleChecklist(cd.id, item.id)}
-                          className="w-full text-left flex items-center gap-2 p-1.5 rounded bg-elevated/60 hover:bg-elevated text-xs transition-colors"
+                          className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] text-xs transition-colors hover:border-slate-300"
                         >
-                          {item.done ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
-                          ) : (
-                            <Circle className="w-3.5 h-3.5 text-muted/60 shrink-0" />
-                          )}
+                          <div
+                            className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                              item.done ? 'bg-mint text-slate-950' : 'border border-slate-300 dark:border-slate-600'
+                            }`}
+                          >
+                            {item.done && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
                           <span
-                            className={`flex-1 ${
-                              item.done ? 'line-through text-muted' : 'text-foreground'
+                            className={`flex-1 font-sans ${
+                              item.done ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'
                             }`}
                           >
                             {item.text}
@@ -256,144 +263,164 @@ export default function CountdownsPage() {
               </div>
 
               {/* Footer Stamp */}
-              <div className="pt-3 border-t border-border flex items-center justify-between text-xs font-mono text-muted">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-muted" />
+              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs font-display">
+                <span className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   Target: {cd.targetDate.replace('T', ' ')}
                 </span>
-                <span className={time.isPast ? 'text-danger font-semibold' : 'text-success'}>
+                <span className={time.isPast ? 'text-coral font-bold' : 'text-emerald-600 dark:text-mint font-bold'}>
                   {time.isPast ? 'Deadline Passed' : 'Active'}
                 </span>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Add Countdown Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleCreateCountdown}
-            className="bg-surface border border-border rounded-lg max-w-lg w-full p-5 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-semibold text-sm text-foreground">Add New Target Deadline</h3>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="text-muted hover:text-foreground text-xs"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Oxford MSc Computer Science Application"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">Target Date & Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bento-card max-w-lg w-full p-6 space-y-4 bg-white dark:bg-[#131A29]"
+            >
+              <form onSubmit={handleCreateCountdown}>
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                  <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
+                    Add New Target Deadline
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
                   >
-                    <option value="university">University Application</option>
-                    <option value="exam">Exam / Certification</option>
-                    <option value="competition">Competition / Hackathon</option>
-                    <option value="project">Project Launch</option>
-                    <option value="personal">Personal Milestone</option>
-                  </select>
+                    ✕
+                  </button>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">Priority</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as any)}
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                <div className="space-y-3.5 pt-3">
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. Oxford MSc Computer Science Application"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Target Date & Time *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={targetDate}
+                        onChange={(e) => setTargetDate(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value as any)}
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      >
+                        <option value="university">University Application</option>
+                        <option value="exam">Exam / Certification</option>
+                        <option value="competition">Competition / Hackathon</option>
+                        <option value="project">Project Launch</option>
+                        <option value="personal">Personal Milestone</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Priority
+                      </label>
+                      <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value as any)}
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      >
+                        <option value="urgent">Urgent</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Portal URL (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={targetUrl}
+                        onChange={(e) => setTargetUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Notes / Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Required documents, test scores, letters of reference..."
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Checklist Items (One per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={checklistItems}
+                      onChange={(e) => setChecklistItems(e.target.value)}
+                      placeholder="Official transcripts&#10;Statement of Purpose draft&#10;Reference letters"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn-secondary text-xs py-2 px-4"
                   >
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
+                    Close
+                  </button>
+                  <button type="submit" className="btn-primary text-xs py-2 px-5">
+                    Save Deadline
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">Portal URL (Optional)</label>
-                  <input
-                    type="text"
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">Notes / Description</label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Required documents, test scores, letters of reference..."
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">
-                  Checklist Items (One per line)
-                </label>
-                <textarea
-                  rows={3}
-                  value={checklistItems}
-                  onChange={(e) => setChecklistItems(e.target.value)}
-                  placeholder="Official transcripts&#10;Statement of Purpose draft&#10;Reference letters"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary resize-none font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="btn-secondary text-xs"
-              >
-                Close
-              </button>
-              <button type="submit" className="btn-primary text-xs">
-                Save Deadline
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

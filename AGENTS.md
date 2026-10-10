@@ -96,5 +96,18 @@ unverified) or skip it. This keeps confident guesses out.
   2. Explicitly preserve `mastered` status when `grade >= 3` in `calculateMasteryLevel`, allowing resets to `learning` only on `grade === 1`.
   3. Support both `StreakDay` objects and raw number arrays in `calculateStreaks` to allow direct reuse in heatmap components and unit tests.
 - **Gotchas**: Never rely on Node.js `process.env.TZ` on Windows as C++ runtime does not dynamically update timezone after boot.
-- **What didn't work**: Relying on local `nextDate.setDate(nextDate.getDate() + intervalDays)` before calling `.toISOString().split('T')[0]`.
+
+### 2026-10-10 — Lenis Smooth Scrolling Engine & GSAP Ticker Synchronization
+- **Goal**: Flawless, jitter-free smooth scrolling and entrance physics across mobile and desktop without scroll trapping.
+- **Failure pattern**:
+  1. *Inner scroll trapping*: Placing `overflow-y-auto` on `<main>` created an isolated scroll container, completely bypassing Lenis window scroll listeners.
+  2. *CSS engine collision*: Leaving `scroll-behavior: smooth` on `html` caused browser native smooth scroll to collide with Lenis's requestAnimationFrame interpolation, producing stuttering scroll jumps.
+  3. *Ticker divergence*: Running detached `requestAnimationFrame` loops for Lenis while GSAP ran its internal ticker caused frame lag during animations.
+- **Verified by**: `npm test` exiting 0 (6 test files, 52 passed tests), `npm run lint` passing with 0 warnings, and `npm run build` exiting 0 (14 static pages generated).
+- **Steps**:
+  1. Let the document scroll naturally via window; eliminate `overflow-y-auto` from inner layouts while keeping navigation sticky (`sticky top-0`).
+  2. Always import `lenis/dist/lenis.css` and remove `scroll-behavior: smooth` from `html`.
+  3. Hook Lenis directly into GSAP's ticker: `gsap.ticker.add((time) => lenis.raf(time * 1000))` and disable GSAP lag smoothing (`gsap.ticker.lagSmoothing(0)`).
+- **Gotchas**: GSAP ticker `time` is in seconds, so convert to milliseconds (`time * 1000`) when passing to `lenis.raf`.
+- **What didn't work**: Relying on separate `requestAnimationFrame(raf)` inside Lenis wrapper while running GSAP animations separately.
 

@@ -35,7 +35,7 @@ export const INITIAL_CATEGORIES: Category[] = [
   {
     id: 'education',
     name: 'Education',
-    color: '#3985F6',
+    color: '#5E43F3',
     description: 'School, university lectures, homework, assignments',
     icon: 'GraduationCap',
   },
@@ -663,14 +663,15 @@ export const INITIAL_ACTIVITIES: Activity[] = [
 
 export function generatePastHabitCompletions(): HabitCompletion[] {
   const completions: HabitCompletion[] = [];
-  const today = new Date();
+  const todayIso = new Date().toISOString().split('T')[0];
+  const todayUtc = new Date(todayIso + 'T00:00:00Z');
 
   for (let i = 0; i < 90; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
+    const d = new Date(todayUtc);
+    d.setUTCDate(todayUtc.getUTCDate() - i);
     const dateStr = d.toISOString().split('T')[0];
 
-    const dayOfWeek = d.getDay();
+    const dayOfWeek = d.getUTCDay();
     const seed = (i * 17 + dayOfWeek * 31) % 100;
 
     if (seed > 15) {
@@ -719,7 +720,8 @@ export function generatePastHabitCompletions(): HabitCompletion[] {
 
 export function generatePastActivities(): Activity[] {
   const past: Activity[] = [...INITIAL_ACTIVITIES];
-  const today = new Date();
+  const todayIso = new Date().toISOString().split('T')[0];
+  const todayUtc = new Date(todayIso + 'T00:00:00Z');
 
   const categories: Array<Activity['categoryId']> = [
     'wakeup',
@@ -734,8 +736,8 @@ export function generatePastActivities(): Activity[] {
   ];
 
   for (let i = 1; i <= 60; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
+    const d = new Date(todayUtc);
+    d.setUTCDate(todayUtc.getUTCDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const numActivities = ((i * 7 + 3) % 4) + 1;
 

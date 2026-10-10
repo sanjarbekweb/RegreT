@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain,
   Plus,
@@ -97,7 +98,6 @@ export default function KnowledgeVaultPage() {
 
     try {
       const generated = await generateLearningMaterials(newTopic || newTitle, newContent, apiKey);
-
       const docId = `doc-${Date.now()}`;
 
       // Convert generated flashcards to full Flashcard entities
@@ -166,72 +166,73 @@ export default function KnowledgeVaultPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
         <div>
-          <div className="text-xs font-mono text-muted uppercase tracking-wider">
+          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Cognitive Repository & AI Tutor
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
             Knowledge Vault
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
             Ingest lectures, textbooks, business topics, and research papers. Generate AI quizzes and spaced repetition flashcards.
           </p>
         </div>
         <button
           onClick={() => setShowNewModal(true)}
-          className="btn-primary text-xs py-2 px-4 self-start sm:self-auto"
+          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[3]" />
           <span>Ingest New Lesson</span>
         </button>
       </div>
 
-      {/* Main Layout: List of documents on left, Selected Document details on right */}
+      {/* Main Bento Layout: List of documents on left, Selected Document details on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Lesson Directory */}
         <div className="space-y-3">
-          <div className="text-xs font-mono text-muted uppercase px-1">
+          <div className="text-xs font-display font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
             Synthesized Lessons ({docs.length})
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {docs.map((doc) => {
               const isSelected = selectedDoc?.id === doc.id;
               return (
-                <div
+                <motion.div
                   key={doc.id}
+                  whileHover={{ y: -2 }}
                   onClick={() => setSelectedDoc(doc)}
-                  className={`p-3.5 rounded-lg border text-left cursor-pointer transition-all ${
+                  className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
                     isSelected
-                      ? 'bg-elevated border-primary text-foreground'
-                      : 'bg-surface border-border text-muted hover:border-border/80 hover:text-foreground'
+                      ? 'bg-lime/15 dark:bg-lime/10 border-lime text-slate-950 dark:text-white shadow-sm ring-1 ring-lime/40'
+                      : 'bg-white dark:bg-[#131A29] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.12] shadow-sm'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-surface border border-border text-primary">
+                    <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200">
                       {doc.topic}
                     </span>
-                    <span className="text-[10px] font-mono text-muted">
+                    <span className="text-[10px] font-mono text-slate-400">
                       {doc.createdAt.split('T')[0]}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-xs text-foreground mt-2 line-clamp-1">
+                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-2 line-clamp-1">
                     {doc.title}
                   </h4>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-muted">
-                    <span className="flex items-center gap-1">
-                      <HelpCircle className="w-3 h-3 text-warning" />
+                  <div className="flex items-center gap-3 mt-2.5 text-[11px] font-display text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
+                      <HelpCircle className="w-3.5 h-3.5" />
                       {doc.quizzes.length} Quizzes
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Layers className="w-3 h-3 text-primary" />
-                      {doc.flashcardIds.length} Flashcards
+                    <span className="flex items-center gap-1 font-semibold text-iris">
+                      <Layers className="w-3.5 h-3.5" />
+                      {doc.flashcardIds.length} Cards
                     </span>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -240,33 +241,35 @@ export default function KnowledgeVaultPage() {
         {/* Right Column (2 cols): Selected Lesson In-Depth Viewer */}
         <div className="lg:col-span-2 space-y-4">
           {selectedDoc ? (
-            <div className="bg-surface border border-border rounded-lg p-5 space-y-5">
+            <div className="bento-card p-6 md:p-7 space-y-5 bg-white dark:bg-[#131A29]">
               {/* Document Header & Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-elevated border border-border text-primary font-medium">
+                    <span className="text-xs font-display font-bold px-2.5 py-0.5 rounded-full bg-lime text-slate-950">
                       {selectedDoc.topic}
                     </span>
-                    <span className="text-xs font-mono text-muted">
+                    <span className="text-xs font-mono text-slate-400">
                       Source: {selectedDoc.sourceType}
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold text-foreground mt-1.5">{selectedDoc.title}</h2>
+                  <h2 className="text-xl sm:text-2xl font-display font-extrabold text-slate-900 dark:text-white mt-2">
+                    {selectedDoc.title}
+                  </h2>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleLaunchDeck(selectedDoc)}
-                    className="btn-secondary text-xs py-1.5 px-3"
+                    className="btn-secondary text-xs py-2 px-4 gap-1.5"
                   >
-                    <Layers className="w-3.5 h-3.5 text-primary" />
+                    <Layers className="w-3.5 h-3.5 text-iris" />
                     <span>Practice Cards</span>
                   </button>
                   {selectedDoc.quizzes.length > 0 && (
                     <button
                       onClick={() => setActiveQuiz(selectedDoc.quizzes[0])}
-                      className="btn-primary text-xs py-1.5 px-3"
+                      className="btn-primary text-xs py-2 px-4 gap-1.5"
                     >
                       <Award className="w-3.5 h-3.5" />
                       <span>Take AI Quiz</span>
@@ -274,41 +277,41 @@ export default function KnowledgeVaultPage() {
                   )}
                   <button
                     onClick={(e) => handleDeleteDoc(selectedDoc.id, e)}
-                    className="p-1.5 rounded bg-elevated border border-danger/40 text-danger hover:bg-danger/20 transition-colors"
+                    className="p-2 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
                     title="Delete Lesson Document"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* AI Summary Box */}
+              {/* AI Summary Box (Soft Lilac Bento Inset) */}
               {selectedDoc.aiSummary && (
-                <div className="bg-elevated border border-border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary font-mono">
-                    <Sparkles className="w-3.5 h-3.5" />
+                <div className="rounded-2xl p-4 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-800/30 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-display font-bold text-iris">
+                    <Sparkles className="w-4 h-4 text-iris" />
                     <span>AI Executive Summary</span>
                   </div>
-                  <p className="text-xs text-foreground/90 leading-relaxed">
+                  <p className="text-xs text-slate-700 dark:text-purple-200 leading-relaxed font-sans">
                     {selectedDoc.aiSummary}
                   </p>
                 </div>
               )}
 
-              {/* Key Takeaways */}
+              {/* Key Takeaways (Soft Mint Inset) */}
               {selectedDoc.keyTakeaways && selectedDoc.keyTakeaways.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-muted uppercase font-mono">
+                <div className="space-y-2.5">
+                  <div className="text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                     Key Conceptual Takeaways
                   </div>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {selectedDoc.keyTakeaways.map((point, idx) => (
                       <li
                         key={idx}
-                        className="text-xs text-foreground flex items-start gap-2 bg-elevated/40 p-2 rounded border border-border/40"
+                        className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/30"
                       >
-                        <CheckCircle className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
-                        <span>{point}</span>
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-mint shrink-0 mt-0.5" />
+                        <span className="font-sans leading-relaxed">{point}</span>
                       </li>
                     ))}
                   </ul>
@@ -317,24 +320,26 @@ export default function KnowledgeVaultPage() {
 
               {/* Attached Quizzes */}
               <div className="space-y-3 pt-2">
-                <div className="text-xs font-semibold text-muted uppercase font-mono">
+                <div className="text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                   Synthesized Assessment Modules
                 </div>
                 {selectedDoc.quizzes.map((q) => (
                   <div
                     key={q.id}
-                    className="bg-elevated border border-border rounded p-3 flex items-center justify-between"
+                    className="rounded-2xl p-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between"
                   >
                     <div>
-                      <div className="text-xs font-semibold text-foreground">{q.title}</div>
-                      <div className="text-[11px] font-mono text-muted mt-0.5">
+                      <div className="text-xs font-display font-bold text-slate-900 dark:text-white">
+                        {q.title}
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                         {q.questions.length} questions
                         {q.highestScore !== undefined ? ` · High Score: ${q.highestScore}%` : ''}
                       </div>
                     </div>
                     <button
                       onClick={() => setActiveQuiz(q)}
-                      className="btn-secondary text-xs py-1 px-3"
+                      className="btn-iris text-xs py-1.5 px-4"
                     >
                       Start Quiz
                     </button>
@@ -343,17 +348,17 @@ export default function KnowledgeVaultPage() {
               </div>
 
               {/* Original Raw Material Accordion */}
-              <div className="space-y-2 pt-2 border-t border-border">
-                <div className="text-xs font-semibold text-muted uppercase font-mono">
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+                <div className="text-xs font-display font-bold text-slate-400 uppercase tracking-wider">
                   Raw Ingested Text / Notes
                 </div>
-                <div className="bg-elevated/50 border border-border rounded p-3 max-h-48 overflow-y-auto text-xs text-muted font-mono whitespace-pre-wrap">
+                <div className="rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06] p-4 max-h-48 overflow-y-auto text-xs text-slate-600 dark:text-slate-400 font-mono whitespace-pre-wrap leading-relaxed">
                   {selectedDoc.rawContent}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-surface border border-border rounded-lg p-12 text-center text-muted text-xs">
+            <div className="bento-card p-12 text-center text-slate-400 text-xs bg-white dark:bg-[#131A29]">
               Select a lesson from the directory or create a new lesson to begin AI extraction.
             </div>
           )}
@@ -361,106 +366,116 @@ export default function KnowledgeVaultPage() {
       </div>
 
       {/* Ingest New Lesson Modal */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleCreateDocument}
-            className="bg-surface border border-border rounded-lg max-w-xl w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <h3 className="font-semibold text-sm text-foreground">Ingest Knowledge & Lessons</h3>
-                <div className="text-[11px] text-muted">
-                  AI will analyze your notes, generate summaries, questions, and flashcards.
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNewModal(false)}
-                className="text-muted hover:text-foreground text-xs"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">Lesson Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Modern Business Strategy & Competitive Moats"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">
-                  Topic / Discipline
-                </label>
-                <input
-                  type="text"
-                  value={newTopic}
-                  onChange={(e) => setNewTopic(e.target.value)}
-                  placeholder="e.g. Business, Computer Science, Economics, Biology"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-mono text-muted">
-                    Lesson Notes / Ingested Content *
-                  </label>
+      <AnimatePresence>
+        {showNewModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bento-card max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-[#131A29]"
+            >
+              <form onSubmit={handleCreateDocument}>
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                  <div>
+                    <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
+                      Ingest Knowledge & Lessons
+                    </h3>
+                    <div className="text-[11px] text-slate-400">
+                      AI will analyze notes, generate summaries, questions, and flashcards.
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1.5"
+                    onClick={() => setShowNewModal(false)}
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
                   >
-                    <Upload className="w-3 h-3 text-primary" />
-                    <span>Upload Study File</span>
+                    ✕
                   </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".txt,.md,.json,.csv,.pdf,text/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
                 </div>
-                <textarea
-                  required
-                  rows={8}
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Upload study file or paste lecture transcript, business case notes, textbook excerpts..."
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setShowNewModal(false)}
-                className="btn-secondary text-xs"
-              >
-                Close
-              </button>
-              <button
-                type="submit"
-                disabled={isGenerating}
-                className="btn-primary text-xs flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{isGenerating ? 'Synthesizing with AI...' : 'Generate Learning Pipeline'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                <div className="space-y-3.5 pt-3">
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Lesson Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="e.g. Modern Business Strategy & Competitive Moats"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Topic / Discipline
+                    </label>
+                    <input
+                      type="text"
+                      value={newTopic}
+                      onChange={(e) => setNewTopic(e.target.value)}
+                      placeholder="e.g. Business, Computer Science, Economics, Biology"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
+                        Lesson Notes / Ingested Content *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="btn-secondary text-[11px] py-1 px-3 flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3 h-3 text-iris" />
+                        <span>Upload File</span>
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".txt,.md,.json,.csv,.pdf,text/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    <textarea
+                      required
+                      rows={8}
+                      value={newContent}
+                      onChange={(e) => setNewContent(e.target.value)}
+                      placeholder="Upload study file or paste lecture transcript, business case notes, textbook excerpts..."
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime font-mono leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewModal(false)}
+                    className="btn-secondary text-xs py-2 px-4"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="btn-primary text-xs py-2 px-5 flex items-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{isGenerating ? 'Synthesizing with AI...' : 'Generate Learning Pipeline'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Quiz Modal */}
       {activeQuiz && (
@@ -478,7 +493,7 @@ export default function KnowledgeVaultPage() {
 
       {/* Flashcard Viewer Modal */}
       {activeDeck && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
           <FlashcardViewer
             flashcards={activeDeck}
             onClose={() => setActiveDeck(null)}

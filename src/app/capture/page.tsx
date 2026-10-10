@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
   Upload,
@@ -18,6 +19,7 @@ import {
   Check,
   Video,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { INITIAL_CATEGORIES, INITIAL_PROJECTS, storage } from '../../lib/storage';
 import { Activity, CategoryId, Attachment } from '../../lib/types';
@@ -119,7 +121,7 @@ export default function QuickCapturePage() {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setShowCameraModal(false);
@@ -127,65 +129,61 @@ export default function QuickCapturePage() {
 
   const snapPhoto = async () => {
     if (!videoRef.current) return;
-    const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-    stopCamera();
 
-    const { dataUrl, sizeBytes } = await compressImage(rawDataUrl, 1280, 0.82);
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    const now = new Date();
     const newAtt: Attachment = {
-      id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: `att-${Date.now()}`,
       url: dataUrl,
-      originalName: `selfie_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
       mimeType: 'image/jpeg',
-      sizeBytes,
-      caption: categoryId === 'wakeup' ? 'Morning wake up selfie verification' : 'Camera photo proof',
-      createdAt: new Date().toISOString(),
+      originalName: `selfie-${now.toISOString().replace(/[:.]/g, '-')}.jpg`,
+      caption: categoryId === 'wakeup' ? `Wake-Up Verification ${now.toLocaleTimeString()}` : 'Live Snapshot',
+      sizeBytes: dataUrl.length,
+      createdAt: now.toISOString(),
     };
-    setAttachments((prev) => [...prev, newAtt]);
 
-    if (!title.trim() && categoryId === 'wakeup') {
-      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      setTitle(`Woke up at ${timeStr}`);
-    }
+    setAttachments((prev) => [...prev, newAtt]);
+    stopCamera();
   };
 
-  // Handle file / photo upload with canvas compression
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    for (const file of Array.from(files)) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       try {
-        const { dataUrl, sizeBytes } = await compressImage(file, 1280, 0.82);
+        const compressed = await compressImage(file, 1280, 0.8);
         const newAtt: Attachment = {
-          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-          url: dataUrl,
-          originalName: file.name,
+          id: `att-${Date.now()}-${i}`,
+          url: compressed.dataUrl,
           mimeType: file.type || 'image/jpeg',
-          sizeBytes,
-          caption: categoryId === 'wakeup' ? 'Wake up verification photo' : undefined,
+          originalName: file.name,
+          caption: '',
+          sizeBytes: compressed.sizeBytes,
           createdAt: new Date().toISOString(),
         };
         setAttachments((prev) => [...prev, newAtt]);
-
-        if (!title.trim() && categoryId === 'wakeup') {
-          const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-          setTitle(`Woke up at ${timeStr}`);
-        }
       } catch (err) {
         console.error('Failed to compress image:', err);
       }
     }
   };
 
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  const handleRemoveAttachment = (attId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== attId));
+    setCaptions((prev) => {
+      const copy = { ...prev };
+      delete copy[attId];
+      return copy;
+    });
   };
 
   const handleSaveActivity = (e: React.FormEvent) => {
@@ -248,23 +246,27 @@ export default function QuickCapturePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-7">
       {/* Header */}
-      <div className="border-b border-border pb-3">
-        <div className="text-xs font-mono text-muted uppercase tracking-wider">Capture Hub</div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-1">
+      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
+        <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+          Capture Hub
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
           Record Life Activity
         </h1>
-        <p className="text-xs text-muted mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl font-sans">
           Permanent chronological logging for morning routine, coding sessions, lessons, readings, and media.
         </p>
       </div>
 
-      <form onSubmit={handleSaveActivity} className="space-y-5">
-        {/* Category Selector Grid */}
-        <div className="space-y-2">
-          <label className="block text-xs font-mono text-muted uppercase">Select Category</label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <form onSubmit={handleSaveActivity} className="space-y-6">
+        {/* Category Selector Grid (Bento squircle pills) */}
+        <div className="space-y-2.5">
+          <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            Select Category
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {INITIAL_CATEGORIES.map((cat) => {
               const isSelected = categoryId === cat.id;
               return (
@@ -272,30 +274,32 @@ export default function QuickCapturePage() {
                   type="button"
                   key={cat.id}
                   onClick={() => setCategoryId(cat.id)}
-                  className={`p-2.5 rounded border text-left transition-all text-xs flex flex-col justify-between ${
+                  className={`p-3 rounded-2xl border text-left transition-all text-xs flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-elevated border-primary text-foreground ring-1 ring-primary'
-                      : 'bg-surface border-border text-muted hover:border-border/80 hover:text-foreground'
+                      ? 'bg-lime text-slate-950 font-bold border-lime shadow-sm ring-2 ring-lime/40'
+                      : 'bg-white dark:bg-[#131A29] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:border-slate-300 shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{cat.name}</span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-display font-bold">{cat.name}</span>
                     <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: cat.color }}
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: isSelected ? '#0F172A' : cat.color }}
                     />
                   </div>
-                  <span className="text-[10px] text-muted/70 mt-1 line-clamp-1">{cat.description}</span>
+                  <span className={`text-[10px] mt-1.5 line-clamp-1 ${isSelected ? 'text-slate-950/80 font-medium' : 'text-slate-400'}`}>
+                    {cat.description}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Title & Description */}
-        <div className="bg-surface border border-border rounded-lg p-4 space-y-4">
+        {/* Title & Description Bento Card */}
+        <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
           <div>
-            <label className="block text-xs font-mono text-muted uppercase mb-1">
+            <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
               Activity Title *
             </label>
             <input
@@ -314,27 +318,27 @@ export default function QuickCapturePage() {
                   ? 'e.g. F1 Monza Grand Prix Qualifying'
                   : 'e.g. Completed Business strategy case homework'
               }
-              className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-primary"
+              className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime font-sans"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono text-muted uppercase mb-1">
-              Notes & Comments
+            <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+              Notes & Reflections
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Document the exact details, metrics, key thoughts, or reflections..."
-              className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-primary resize-none"
+              className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime resize-none font-sans leading-relaxed"
             />
           </div>
 
           {/* Tags & Project Link */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-muted uppercase mb-1">
+              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                 Tags (comma separated)
               </label>
               <input
@@ -342,17 +346,17 @@ export default function QuickCapturePage() {
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="routine, discipline, focus"
-                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
               />
             </div>
             <div>
-              <label className="block text-xs font-mono text-muted uppercase mb-1">
+              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                 Attach to Project (Optional)
               </label>
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime font-display font-semibold"
               >
                 <option value="">None / General Log</option>
                 {INITIAL_PROJECTS.map((p) => (
@@ -368,41 +372,47 @@ export default function QuickCapturePage() {
         {/* Dynamic Category Contexts */}
         {/* If Coding */}
         {categoryId === 'coding' && (
-          <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-border text-xs font-semibold text-primary font-mono">
+          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-iris">
               <FolderGit2 className="w-4 h-4" />
               <span>Developer Integration Context</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">GitHub Repo</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  GitHub Repo
+                </label>
                 <input
                   type="text"
                   value={githubRepo}
                   onChange={(e) => setGithubRepo(e.target.value)}
                   placeholder="sanjarbekweb/regret-os"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 />
               </div>
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">Commit Message / Hash</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Commit Message / Hash
+                </label>
                 <input
                   type="text"
                   value={githubCommit}
                   onChange={(e) => setGithubCommit(e.target.value)}
                   placeholder="feat: add interactive contribution calendar"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-mono text-muted mb-1">Vercel Deployment URL</label>
+              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Vercel Deployment URL
+              </label>
               <input
                 type="text"
                 value={vercelUrl}
                 onChange={(e) => setVercelUrl(e.target.value)}
                 placeholder="https://regret-os.vercel.app"
-                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
               />
             </div>
           </div>
@@ -410,51 +420,59 @@ export default function QuickCapturePage() {
 
         {/* If Reading */}
         {categoryId === 'reading' && (
-          <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-border text-xs font-semibold text-primary font-mono">
+          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-iris">
               <BookOpen className="w-4 h-4" />
               <span>Book Quote & Literature Context</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">Book / Paper Title</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Book / Paper Title
+                </label>
                 <input
                   type="text"
                   value={bookTitle}
                   onChange={(e) => setBookTitle(e.target.value)}
                   placeholder="Deep Work"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 />
               </div>
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">Author</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Author
+                </label>
                 <input
                   type="text"
                   value={bookAuthor}
                   onChange={(e) => setBookAuthor(e.target.value)}
                   placeholder="Cal Newport"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-mono text-muted mb-1">Key Quotation / Excerpt</label>
+              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Key Quotation / Excerpt
+              </label>
               <textarea
                 rows={2}
                 value={bookQuote}
                 onChange={(e) => setBookQuote(e.target.value)}
                 placeholder="Paste verbatim quote from book or upload photo of the page below..."
-                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary resize-none"
+                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
               />
             </div>
             <div className="w-32">
-              <label className="block text-xs font-mono text-muted mb-1">Page Number</label>
+              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Page Number
+              </label>
               <input
                 type="number"
                 value={bookPage}
                 onChange={(e) => setBookPage(e.target.value)}
                 placeholder="42"
-                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
               />
             </div>
           </div>
@@ -462,18 +480,20 @@ export default function QuickCapturePage() {
 
         {/* If Entertainment or Media */}
         {(categoryId === 'entertainment' || categoryId === 'media') && (
-          <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-border text-xs font-semibold text-primary font-mono">
+          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-coral">
               <Film className="w-4 h-4" />
               <span>Media & Entertainment Details</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">Media Type</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Media Type
+                </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as any)}
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 >
                   <option value="f1">Formula 1</option>
                   <option value="anime">Anime</option>
@@ -484,13 +504,15 @@ export default function QuickCapturePage() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-mono text-muted mb-1">Title</label>
+                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Title
+                </label>
                 <input
                   type="text"
                   value={mediaTitle}
                   onChange={(e) => setMediaTitle(e.target.value)}
                   placeholder="e.g. Monza Grand Prix 2026 or Interstellar Soundtrack"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
                 />
               </div>
             </div>
@@ -498,34 +520,36 @@ export default function QuickCapturePage() {
         )}
 
         {/* Live Session Timer */}
-        <div className="bg-surface border border-border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bento-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#131A29]">
           <div>
-            <div className="text-xs font-mono text-muted uppercase">Session Timer</div>
-            <div className="text-2xl font-bold font-mono text-primary mt-1">
+            <div className="text-xs font-display font-bold text-slate-400 uppercase tracking-wider">
+              Session Duration
+            </div>
+            <div className="text-3xl font-display font-black text-slate-900 dark:text-white mt-1">
               {formatTimer(timerSeconds)}
             </div>
-            <div className="text-[11px] text-muted">
+            <div className="text-[11px] text-slate-400 mt-0.5">
               {timerRunning ? 'Session active and recording...' : 'Optional live duration logging'}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {!timerRunning ? (
               <button
                 type="button"
                 onClick={handleStartTimer}
-                className="btn-secondary text-xs"
+                className="btn-secondary text-xs py-2 px-4 gap-2"
               >
-                <Play className="w-3.5 h-3.5 text-success" />
-                <span>Start Session</span>
+                <Play className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Start Timer</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleStopTimer}
-                className="btn-secondary text-xs"
+                className="btn-secondary text-xs py-2 px-4 gap-2"
               >
-                <Pause className="w-3.5 h-3.5 text-warning" />
+                <Pause className="w-3.5 h-3.5 text-amber-500" />
                 <span>Pause</span>
               </button>
             )}
@@ -537,7 +561,7 @@ export default function QuickCapturePage() {
                   setTimerSeconds(0);
                   setTimerStartIso(null);
                 }}
-                className="text-xs text-danger hover:underline px-2"
+                className="text-xs text-coral hover:underline px-2 font-display font-bold"
               >
                 Reset
               </button>
@@ -546,11 +570,13 @@ export default function QuickCapturePage() {
         </div>
 
         {/* Photos & Multi-Media Upload */}
-        <div className="bg-surface border border-border rounded-lg p-4 space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-2">
+        <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
             <div>
-              <div className="text-xs font-mono text-muted uppercase">Permanent Photos & Proof</div>
-              <div className="text-[11px] text-muted">
+              <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Permanent Proof & Visuals
+              </div>
+              <div className="text-[11px] text-slate-400">
                 Selfies, coding screenshots, textbook pages, whiteboard sketches
               </div>
             </div>
@@ -558,17 +584,17 @@ export default function QuickCapturePage() {
               <button
                 type="button"
                 onClick={startCamera}
-                className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                className="btn-primary text-xs py-1.5 px-3.5 gap-1.5"
               >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Take Selfie / Photo</span>
+                <Camera className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Camera</span>
               </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                className="btn-secondary text-xs py-1.5 px-3.5 gap-1.5"
               >
-                <Upload className="w-3.5 h-3.5 text-primary" />
+                <Upload className="w-3.5 h-3.5 text-iris" />
                 <span>Upload</span>
               </button>
             </div>
@@ -591,17 +617,17 @@ export default function QuickCapturePage() {
           </div>
 
           {cameraError && (
-            <div className="p-2.5 rounded bg-warning/15 border border-warning/30 text-warning text-xs">
+            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 text-xs">
               {cameraError}
             </div>
           )}
 
           {/* Photo Preview Grid */}
           {attachments.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {attachments.map((att) => (
-                <div key={att.id} className="bg-elevated border border-border rounded p-2 space-y-2">
-                  <div className="relative rounded overflow-hidden h-36 bg-black">
+                <div key={att.id} className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-2.5 space-y-2 bg-slate-50 dark:bg-white/[0.02]">
+                  <div className="relative rounded-xl overflow-hidden h-36 bg-black">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={att.url}
@@ -611,7 +637,7 @@ export default function QuickCapturePage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(att.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded bg-black/70 text-danger hover:bg-black"
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-950/80 text-coral hover:bg-slate-950"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -621,40 +647,23 @@ export default function QuickCapturePage() {
                     value={captions[att.id] || ''}
                     onChange={(e) => setCaptions({ ...captions, [att.id]: e.target.value })}
                     placeholder="Add caption (e.g. 06:15 selfie, terminal output)..."
-                    className="w-full bg-surface border border-border rounded px-2.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary"
+                    className="w-full bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-lime"
                   />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center space-y-3">
-              <Camera className="w-8 h-8 text-primary mx-auto opacity-80" />
+            <div className="border-2 border-dashed border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 text-center space-y-2.5">
+              <Camera className="w-8 h-8 text-slate-300 mx-auto" />
               <div>
-                <div className="text-xs font-medium text-foreground">
+                <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
                   {categoryId === 'wakeup'
                     ? 'Take your wake-up selfie verification'
                     : 'Capture camera proof or upload screenshot'}
                 </div>
-                <div className="text-[11px] text-muted mt-1">
+                <div className="text-[11px] text-slate-400 mt-0.5">
                   Stored permanently in your life operating system
                 </div>
-              </div>
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>Take Selfie Now</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="btn-secondary text-xs py-1.5 px-3"
-                >
-                  Browse Files
-                </button>
               </div>
             </div>
           )}
@@ -665,72 +674,79 @@ export default function QuickCapturePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="btn-secondary text-xs py-2 px-4"
+            className="btn-secondary text-xs py-2.5 px-5"
           >
             Cancel
           </button>
-          <button type="submit" className="btn-primary text-xs py-2 px-5">
-            <Check className="w-4 h-4" />
+          <button type="submit" className="btn-primary text-xs py-2.5 px-6 gap-2">
+            <Check className="w-4 h-4 stroke-[3]" />
             <span>Save to Permanent Life OS</span>
           </button>
         </div>
       </form>
 
       {/* Live Camera Snapshot Modal */}
-      {showCameraModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-primary" />
-                <span className="text-xs font-semibold text-foreground font-mono">
-                  {categoryId === 'wakeup' ? 'Wake-Up Selfie Verification' : 'Camera Snapshot'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="text-muted hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="relative rounded overflow-hidden aspect-video bg-black flex items-center justify-center border border-border">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-muted font-mono">
-                {categoryId === 'wakeup' ? 'Verify wake-up timestamp' : 'Frame your capture'}
-              </span>
-              <div className="flex items-center gap-2">
+      <AnimatePresence>
+        {showCameraModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bento-card max-w-md w-full p-5 space-y-4 bg-white dark:bg-[#131A29]"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-iris" />
+                  <span className="text-xs font-display font-bold text-slate-900 dark:text-white">
+                    {categoryId === 'wakeup' ? 'Wake-Up Selfie Verification' : 'Camera Snapshot'}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={stopCamera}
-                  className="btn-secondary text-xs py-1.5 px-3"
+                  className="text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={snapPhoto}
-                  className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>Snap Photo</span>
+                  ✕
                 </button>
               </div>
-            </div>
+
+              <div className="relative rounded-2xl overflow-hidden aspect-video bg-black flex items-center justify-center border border-slate-200 dark:border-white/[0.08]">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {categoryId === 'wakeup' ? 'Verify wake-up timestamp' : 'Frame your capture'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="btn-secondary text-xs py-1.5 px-3"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={snapPhoto}
+                    className="btn-primary text-xs py-1.5 px-4 gap-1.5"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Snap Photo</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

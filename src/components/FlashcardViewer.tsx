@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Flashcard } from '../lib/types';
 import { calculateNextReview, calculateMasteryLevel, ReviewGrade } from '../lib/sr-algorithm';
 import { storage } from '../lib/storage';
-import { RotateCw, Check, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
+import { RotateCw, Check, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
 
 interface FlashcardViewerProps {
   flashcards: Flashcard[];
@@ -24,14 +25,20 @@ export default function FlashcardViewer({
 
   if (sessionCards.length === 0 || finished) {
     return (
-      <div className="bg-surface border border-border rounded-lg p-6 text-center space-y-4 max-w-lg mx-auto">
-        <div className="w-12 h-12 rounded-full bg-success/20 border border-success/40 text-success mx-auto flex items-center justify-center">
-          <Check className="w-6 h-6" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bento-card p-7 text-center space-y-5 max-w-lg mx-auto bg-white dark:bg-[#131A29]"
+      >
+        <div className="w-14 h-14 rounded-full bg-lime/20 border border-lime/50 text-slate-950 mx-auto flex items-center justify-center shadow-sm">
+          <Check className="w-7 h-7 text-slate-900 dark:text-lime stroke-[3]" />
         </div>
         <div>
-          <h3 className="font-semibold text-base text-foreground">Review Session Complete</h3>
-          <p className="text-xs text-muted mt-1">
-            All pending spaced repetition flashcards for this deck have been scheduled.
+          <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">
+            Review Session Complete!
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            All pending spaced repetition flashcards for this deck have been scheduled with SM-2.
           </p>
         </div>
         <div className="flex justify-center gap-3 pt-2">
@@ -52,7 +59,7 @@ export default function FlashcardViewer({
             Review Deck Again
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -106,77 +113,81 @@ export default function FlashcardViewer({
   };
 
   return (
-    <div className="bg-surface border border-border rounded-lg p-5 max-w-xl w-full mx-auto space-y-4">
+    <div className="bento-card p-6 md:p-7 max-w-xl w-full mx-auto space-y-5 bg-white dark:bg-[#131A29]">
       {/* Deck Header */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3.5">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-primary" />
-          <span className="text-xs font-mono text-muted uppercase tracking-wider">
+          <div className="w-7 h-7 rounded-full bg-iris/10 flex items-center justify-center">
+            <BookOpen className="w-3.5 h-3.5 text-iris" />
+          </div>
+          <span className="text-xs font-display font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
             {currentCard.category || 'Spaced Repetition'}
           </span>
         </div>
-        <div className="text-xs font-mono text-muted">
+        <div className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300">
           Card {currentIndex + 1} of {sessionCards.length}
         </div>
       </div>
 
       {/* Flip Card Stage */}
-      <div
+      <motion.div
+        whileHover={{ scale: 1.01 }}
         onClick={() => setIsFlipped(!isFlipped)}
-        className="min-h-[220px] bg-elevated border border-border rounded-lg p-6 flex flex-col justify-between cursor-pointer hover:border-primary/50 transition-all select-none"
+        className="min-h-[240px] bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between cursor-pointer hover:border-lime/60 transition-all select-none shadow-sm"
       >
-        <div className="text-[10px] font-mono text-muted uppercase">
-          {isFlipped ? 'Answer & Explanation' : 'Question / Term (Click to flip)'}
+        <div className="flex items-center justify-between text-[11px] font-display font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          <span>{isFlipped ? 'Answer & Explanation' : 'Question / Term'}</span>
+          <span className="text-[10px] text-iris">Click to flip</span>
         </div>
 
-        <div className="my-auto text-center py-4">
-          <div className="text-base sm:text-lg font-medium text-foreground whitespace-pre-wrap">
+        <div className="my-auto text-center py-6">
+          <div className="text-lg sm:text-xl font-display font-bold text-slate-900 dark:text-white whitespace-pre-wrap leading-relaxed">
             {isFlipped ? currentCard.back : currentCard.front}
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-1.5 text-xs text-muted font-mono">
-          <RotateCw className="w-3 h-3" />
-          <span>Tap to {isFlipped ? 'show front' : 'flip'}</span>
+        <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-display font-medium">
+          <RotateCw className="w-3.5 h-3.5 text-slate-400 animate-spin" style={{ animationDuration: '6s' }} />
+          <span>Tap to {isFlipped ? 'show prompt' : 'reveal solution'}</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Grade Action Buttons */}
       {isFlipped ? (
-        <div className="grid grid-cols-4 gap-2 pt-2">
+        <div className="grid grid-cols-4 gap-2.5 pt-2">
           <button
             onClick={() => handleGrade(1)}
-            className="flex flex-col items-center py-2 px-1 rounded bg-elevated border border-danger/40 hover:bg-danger/20 text-danger transition-colors"
+            className="flex flex-col items-center py-2.5 px-1.5 rounded-2xl bg-coral/10 hover:bg-coral/20 border border-coral/30 text-coral-dark dark:text-coral transition-colors font-display"
           >
-            <span className="text-xs font-semibold">Again</span>
+            <span className="text-xs font-bold">Again</span>
             <span className="text-[10px] font-mono opacity-80">&lt; 1d</span>
           </button>
           <button
             onClick={() => handleGrade(3)}
-            className="flex flex-col items-center py-2 px-1 rounded bg-elevated border border-warning/40 hover:bg-warning/20 text-warning transition-colors"
+            className="flex flex-col items-center py-2.5 px-1.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-400 transition-colors font-display"
           >
-            <span className="text-xs font-semibold">Hard</span>
+            <span className="text-xs font-bold">Hard</span>
             <span className="text-[10px] font-mono opacity-80">2d</span>
           </button>
           <button
             onClick={() => handleGrade(4)}
-            className="flex flex-col items-center py-2 px-1 rounded bg-elevated border border-primary/40 hover:bg-primary/20 text-primary transition-colors"
+            className="flex flex-col items-center py-2.5 px-1.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 transition-colors font-display"
           >
-            <span className="text-xs font-semibold">Good</span>
+            <span className="text-xs font-bold">Good</span>
             <span className="text-[10px] font-mono opacity-80">4d</span>
           </button>
           <button
             onClick={() => handleGrade(5)}
-            className="flex flex-col items-center py-2 px-1 rounded bg-elevated border border-success/40 hover:bg-success/20 text-success transition-colors"
+            className="flex flex-col items-center py-2.5 px-1.5 rounded-2xl bg-lime hover:bg-lime-hover text-slate-950 border border-black/5 transition-all font-display shadow-sm"
           >
-            <span className="text-xs font-semibold">Easy</span>
-            <span className="text-[10px] font-mono opacity-80">7d</span>
+            <span className="text-xs font-black">Easy</span>
+            <span className="text-[10px] font-mono font-bold">7d</span>
           </button>
         </div>
       ) : (
         <button
           onClick={() => setIsFlipped(true)}
-          className="w-full btn-secondary text-xs py-2.5"
+          className="w-full btn-secondary text-xs py-3 rounded-full"
         >
           Reveal Solution
         </button>
@@ -184,7 +195,7 @@ export default function FlashcardViewer({
 
       {onClose && (
         <div className="flex justify-end pt-1">
-          <button onClick={onClose} className="text-xs text-muted hover:text-foreground">
+          <button onClick={onClose} className="text-xs font-display font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white">
             Exit Deck
           </button>
         </div>

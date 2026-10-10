@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { storage, INITIAL_CATEGORIES } from '../lib/storage';
+import { storage, INITIAL_CATEGORIES, generatePastHabitCompletions, generatePastActivities } from '../lib/storage';
 import { Activity, VocabularyWord, Flashcard, KnowledgeDocument, Project, Countdown, Habit } from '../lib/types';
 import { calculateNextReview, calculateMasteryLevel } from '../lib/sr-algorithm';
 import { compressImage } from '../lib/image-compress';
@@ -256,5 +256,51 @@ describe('Image Compression Utility & Quota Safety', () => {
 
     expect(result.dataUrl).toBeTruthy();
     expect(result.sizeBytes).toBeGreaterThan(0);
+  });
+});
+
+describe('UTC Date Invariance & Palette Constraints', () => {
+  it('generates deterministic UTC dates without timezone drift in mock activities and habit completions', () => {
+    const habitCompletions = generatePastHabitCompletions();
+    expect(habitCompletions.length).toBeGreaterThan(0);
+    habitCompletions.forEach((hc) => {
+      expect(hc.completedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(isNaN(new Date(hc.completedOn).getTime())).toBe(false);
+    });
+
+    const pastActivities = generatePastActivities();
+    expect(pastActivities.length).toBeGreaterThan(0);
+    pastActivities.forEach((act) => {
+      expect(act.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+      expect(isNaN(new Date(act.startedAt).getTime())).toBe(false);
+    });
+  });
+
+  it('guarantees weekly adherence 7-day window is strictly monotonically increasing and UTC invariant', () => {
+    const todayStr = '2026-10-10';
+    const past7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(todayStr + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+    });
+
+    expect(past7Days.length).toBe(7);
+    expect(past7Days[6]).toBe('2026-10-10');
+    expect(past7Days[0]).toBe('2026-10-04');
+    for (let i = 1; i < past7Days.length; i++) {
+      expect(past7Days[i] > past7Days[i - 1]).toBe(true);
+    }
+  });
+
+  it('enforces strict zero-blue palette across all initial categories', () => {
+    INITIAL_CATEGORIES.forEach((cat) => {
+      expect(cat.color.toLowerCase()).not.toBe('#3b82f6');
+      expect(cat.color.toLowerCase()).not.toBe('#2563eb');
+      expect(cat.color.toLowerCase()).not.toBe('#3985f6');
+      expect(cat.color.toLowerCase()).not.toContain('blue');
+    });
+
+    const educationCat = INITIAL_CATEGORIES.find((c) => c.id === 'education');
+    expect(educationCat?.color).toBe('#5E43F3'); // Signature Royal Iris
   });
 });

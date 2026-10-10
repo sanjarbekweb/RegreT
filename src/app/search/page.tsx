@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
   Search,
   Clock,
@@ -11,6 +12,7 @@ import {
   Hourglass,
   ExternalLink,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Activity, KnowledgeDocument, VocabularyWord, Project, Countdown } from '../../lib/types';
@@ -107,59 +109,59 @@ export default function UniversalSearchPage() {
   }, [query, activities, knowledgeDocs, vocabulary, projects, countdowns]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-7 max-w-4xl mx-auto">
       {/* Top Header */}
-      <div className="border-b border-border pb-3">
-        <div className="text-xs font-mono text-muted uppercase tracking-wider">
+      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
+        <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
           Unified Search Engine
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+        <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
           Universal Search
         </h1>
-        <p className="text-xs text-muted mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl font-sans">
           Search across activities, photos, quotes, lesson summaries, vocabulary, repositories, and deadlines.
         </p>
       </div>
 
-      {/* Search Input Bar */}
+      {/* Search Input Bar (Pill style) */}
       <div className="relative">
-        <Search className="w-5 h-5 text-muted absolute left-4 top-3.5" />
+        <Search className="w-5 h-5 text-slate-400 absolute left-4.5 top-3.5" />
         <input
           type="text"
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by keyword, topic, tag, quote, or project..."
-          className="w-full bg-surface border border-border rounded-lg pl-12 pr-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary placeholder:text-muted/60"
+          className="w-full bento-card pl-12 pr-28 py-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime font-sans shadow-sm"
         />
         {query && (
-          <div className="absolute right-4 top-3.5 text-xs font-mono text-muted">
-            {results.total} results found
+          <div className="absolute right-4 top-3.5 text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300">
+            {results.total} found
           </div>
         )}
       </div>
 
       {/* Results View */}
       {query.trim().length === 0 ? (
-        <div className="bg-surface border border-border rounded-lg p-10 text-center space-y-3">
-          <Search className="w-8 h-8 text-muted/40 mx-auto" />
-          <div className="text-xs font-medium text-foreground">
-            Type a query to search your entire life records
+        <div className="bento-card p-10 text-center space-y-4 bg-white dark:bg-[#131A29]">
+          <Search className="w-10 h-10 text-slate-300 mx-auto" />
+          <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
+            Type a query or select a quick track below
           </div>
           <div className="flex flex-wrap justify-center gap-2 pt-2">
             {['business', 'coding', 'deep work', 'f1', 'oxford', 'strength'].map((tag) => (
               <button
                 key={tag}
                 onClick={() => setQuery(tag)}
-                className="text-xs font-mono px-2.5 py-1 rounded bg-elevated border border-border text-muted hover:text-foreground hover:border-primary transition-colors"
+                className="text-xs font-display font-bold px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 hover:bg-lime hover:text-slate-950 transition-all border border-slate-200/60 dark:border-white/[0.06]"
               >
-                {tag}
+                #{tag}
               </button>
             ))}
           </div>
         </div>
       ) : results.total === 0 ? (
-        <div className="bg-surface border border-border rounded-lg p-10 text-center text-xs text-muted">
+        <div className="bento-card p-12 text-center text-xs text-slate-400 bg-white dark:bg-[#131A29]">
           No records match &quot;{query}&quot;. Try a different keyword or category.
         </div>
       ) : (
@@ -167,8 +169,8 @@ export default function UniversalSearchPage() {
           {/* Matched Activities */}
           {results.activities.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary uppercase">
-                <Clock className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                <Clock className="w-4 h-4 text-lime" />
                 <span>Activities ({results.activities.length})</span>
               </div>
               <div className="space-y-2">
@@ -176,16 +178,16 @@ export default function UniversalSearchPage() {
                   <Link
                     key={a.id}
                     href="/timeline"
-                    className="block bg-surface border border-border rounded-lg p-3.5 hover:border-primary/40 transition-colors"
+                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-foreground">{a.title}</span>
-                      <span className="text-[10px] font-mono text-muted">
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{a.title}</span>
+                      <span className="text-[10px] font-mono text-slate-400">
                         {a.startedAt.split('T')[0]}
                       </span>
                     </div>
                     {a.description && (
-                      <p className="text-xs text-muted line-clamp-1 mt-1">{a.description}</p>
+                      <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{a.description}</p>
                     )}
                   </Link>
                 ))}
@@ -196,8 +198,8 @@ export default function UniversalSearchPage() {
           {/* Matched Knowledge */}
           {results.knowledgeDocs.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary uppercase">
-                <BookOpen className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                <BookOpen className="w-4 h-4 text-iris" />
                 <span>Knowledge Lessons ({results.knowledgeDocs.length})</span>
               </div>
               <div className="space-y-2">
@@ -205,16 +207,16 @@ export default function UniversalSearchPage() {
                   <Link
                     key={k.id}
                     href="/knowledge"
-                    className="block bg-surface border border-border rounded-lg p-3.5 hover:border-primary/40 transition-colors"
+                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-foreground">{k.title}</span>
-                      <span className="text-[10px] font-mono text-primary px-1.5 py-0.5 rounded bg-elevated border border-border">
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{k.title}</span>
+                      <span className="text-[10px] font-display font-bold text-iris px-2.5 py-0.5 rounded-full bg-iris/10">
                         {k.topic}
                       </span>
                     </div>
                     {k.aiSummary && (
-                      <p className="text-xs text-muted line-clamp-2 mt-1">{k.aiSummary}</p>
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1 font-sans">{k.aiSummary}</p>
                     )}
                   </Link>
                 ))}
@@ -225,22 +227,22 @@ export default function UniversalSearchPage() {
           {/* Matched Vocabulary */}
           {results.vocabulary.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary uppercase">
-                <Layers className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Vocabulary Words ({results.vocabulary.length})</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {results.vocabulary.map((v) => (
                   <Link
                     key={v.id}
                     href="/vocabulary"
-                    className="block bg-surface border border-border rounded-lg p-3 hover:border-primary/40 transition-colors"
+                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-foreground">{v.word}</span>
-                      <span className="text-[10px] font-mono text-muted">{v.partOfSpeech}</span>
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{v.word}</span>
+                      <span className="text-[10px] font-display uppercase font-bold text-slate-400">{v.partOfSpeech}</span>
                     </div>
-                    <p className="text-xs text-muted line-clamp-1 mt-1">{v.definition}</p>
+                    <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{v.definition}</p>
                   </Link>
                 ))}
               </div>
@@ -250,8 +252,8 @@ export default function UniversalSearchPage() {
           {/* Matched Projects */}
           {results.projects.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary uppercase">
-                <FolderGit2 className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                <FolderGit2 className="w-4 h-4 text-emerald-600 dark:text-mint" />
                 <span>Developer Projects ({results.projects.length})</span>
               </div>
               <div className="space-y-2">
@@ -259,13 +261,13 @@ export default function UniversalSearchPage() {
                   <Link
                     key={p.id}
                     href="/projects"
-                    className="block bg-surface border border-border rounded-lg p-3.5 hover:border-primary/40 transition-colors"
+                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-foreground">{p.name}</span>
-                      <span className="text-[10px] font-mono text-muted">{p.githubRepo}</span>
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{p.name}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{p.githubRepo}</span>
                     </div>
-                    <p className="text-xs text-muted line-clamp-1 mt-1">{p.description}</p>
+                    <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{p.description}</p>
                   </Link>
                 ))}
               </div>
@@ -275,8 +277,8 @@ export default function UniversalSearchPage() {
           {/* Matched Countdowns */}
           {results.countdowns.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary uppercase">
-                <Hourglass className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                <Hourglass className="w-4 h-4 text-coral" />
                 <span>Deadlines & Milestones ({results.countdowns.length})</span>
               </div>
               <div className="space-y-2">
@@ -284,16 +286,16 @@ export default function UniversalSearchPage() {
                   <Link
                     key={c.id}
                     href="/countdowns"
-                    className="block bg-surface border border-border rounded-lg p-3.5 hover:border-primary/40 transition-colors"
+                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-foreground">{c.title}</span>
-                      <span className="text-[10px] font-mono text-warning">
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{c.title}</span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-coral/15 text-coral-dark dark:text-coral">
                         Target: {c.targetDate.replace('T', ' ')}
                       </span>
                     </div>
                     {c.description && (
-                      <p className="text-xs text-muted line-clamp-1 mt-1">{c.description}</p>
+                      <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{c.description}</p>
                     )}
                   </Link>
                 ))}

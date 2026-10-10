@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderGit2,
   ExternalLink,
@@ -96,73 +97,80 @@ export default function ProjectsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
         <div>
-          <div className="text-xs font-mono text-muted uppercase tracking-wider">
+          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Developer Workspace
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
             Project Studio & Repos
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
             Link GitHub repositories, Vercel deployments, screenshots, and coding activity logs.
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary text-xs py-2 px-4 self-start sm:self-auto"
+          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[3]" />
           <span>New Project</span>
         </button>
       </div>
 
-      {/* Main Grid: Project Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Main Grid: Project Cards (Bento style) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {projects.map((proj) => {
           const isSelected = selectedProj?.id === proj.id;
           return (
-            <div
+            <motion.div
               key={proj.id}
+              whileHover={{ y: -3 }}
               onClick={() => setSelectedProjectId(proj.id)}
-              className={`bg-surface border rounded-lg p-5 space-y-4 cursor-pointer transition-all ${
+              className={`bento-card p-6 space-y-4 cursor-pointer transition-all bg-white dark:bg-[#131A29] ${
                 isSelected
-                  ? 'border-primary ring-1 ring-primary'
-                  : 'border-border hover:border-border/80'
+                  ? 'ring-2 ring-lime shadow-md border-lime/40'
+                  : 'hover:border-slate-300 dark:hover:border-white/[0.12]'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated border border-border uppercase font-semibold text-success">
+                    <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 uppercase">
                       {proj.status}
                     </span>
-                    <span className="text-xs font-mono text-muted">
+                    <span className="text-xs font-mono text-slate-400">
                       Updated {proj.updatedAt.split('T')[0]}
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-foreground mt-1.5">{proj.name}</h3>
+                  <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+                    {proj.name}
+                  </h3>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={(e) => handleDeleteProject(proj.id, e)}
-                    className="p-1 rounded text-muted hover:text-danger hover:bg-elevated transition-colors"
+                    className="p-1.5 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
                     title="Delete Project"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                  <FolderGit2 className="w-5 h-5 text-primary" />
+                  <div className="w-9 h-9 rounded-2xl bg-lime/20 flex items-center justify-center">
+                    <FolderGit2 className="w-4 h-4 text-slate-950 dark:text-lime" />
+                  </div>
                 </div>
               </div>
 
-              <p className="text-xs text-muted leading-relaxed line-clamp-2">{proj.description}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 font-sans">
+                {proj.description}
+              </p>
 
               {/* Screenshots preview */}
               {proj.screenshots.length > 0 && (
-                <div className="h-32 rounded overflow-hidden border border-border bg-black">
+                <div className="h-36 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/[0.08] bg-black">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={proj.screenshots[0]}
@@ -173,7 +181,7 @@ export default function ProjectsPage() {
               )}
 
               {/* Integrations & Tech */}
-              <div className="space-y-2 pt-1 border-t border-border">
+              <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                   {proj.githubRepo && (
                     <a
@@ -181,11 +189,11 @@ export default function ProjectsPage() {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 bg-elevated px-2.5 py-1 rounded border border-border text-foreground hover:text-primary transition-colors"
+                      className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-white/[0.06] px-3 py-1 rounded-full text-slate-800 dark:text-slate-200 hover:bg-slate-200/80 transition-colors"
                     >
-                      <GitBranch className="w-3.5 h-3.5 text-muted" />
+                      <GitBranch className="w-3.5 h-3.5 text-slate-500" />
                       <span>{proj.githubRepo}</span>
-                      <ExternalLink className="w-3 h-3 text-muted" />
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
                     </a>
                   )}
                   {proj.vercelUrl && (
@@ -194,7 +202,7 @@ export default function ProjectsPage() {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 bg-elevated px-2.5 py-1 rounded border border-border text-primary hover:underline"
+                      className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1 rounded-full text-iris hover:underline font-semibold"
                     >
                       <Terminal className="w-3.5 h-3.5" />
                       <span>Vercel Deploy</span>
@@ -202,68 +210,68 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-1 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {proj.techStack.map((tech) => (
                     <span
                       key={tech}
-                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-muted border border-border/60"
+                      className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06]"
                     >
                       {tech}
                     </span>
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Selected Project Connected Coding Timeline */}
       {selectedProj && (
-        <div className="bg-surface border border-border rounded-lg p-5 space-y-4 mt-6">
-          <div className="flex items-center justify-between border-b border-border pb-3">
+        <div className="bento-card p-6 md:p-7 space-y-5 bg-white dark:bg-[#131A29]">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3.5">
             <div>
-              <h3 className="font-semibold text-sm text-foreground">
+              <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
                 Development Activity Logs: {selectedProj.name}
               </h3>
-              <div className="text-xs text-muted font-mono">
+              <div className="text-xs text-slate-400 font-mono mt-0.5">
                 {projectActivities.length} coding sessions linked to this repository
               </div>
             </div>
             <Link
               href="/capture"
-              className="btn-secondary text-xs py-1.5 px-3"
+              className="btn-secondary text-xs py-2 px-4 gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5 text-primary" />
+              <Plus className="w-3.5 h-3.5 text-iris" />
               <span>Log Coding Session</span>
             </Link>
           </div>
 
           <div className="space-y-3">
             {projectActivities.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted">
+              <div className="p-8 text-center text-xs text-slate-400">
                 No coding logs associated with this project yet. Use Quick Capture to log terminal commands, commits, or screenshots.
               </div>
             ) : (
               projectActivities.map((act) => (
                 <div
                   key={act.id}
-                  className="bg-elevated border border-border rounded p-4 space-y-2 text-xs"
+                  className="rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] p-4 space-y-2 text-xs"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-semibold text-foreground">{act.title}</div>
-                      <div className="text-[11px] font-mono text-muted mt-0.5">
+                      <div className="font-display font-bold text-slate-900 dark:text-white">{act.title}</div>
+                      <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                         {act.startedAt.split('T')[0]} at {act.startedAt.split('T')[1]?.slice(0, 5)}
                       </div>
                     </div>
                     {act.githubCommit && (
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-surface border border-border text-primary">
+                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-lime text-slate-950 font-bold">
                         {act.githubCommit}
                       </span>
                     )}
                   </div>
-                  {act.description && <p className="text-muted leading-relaxed">{act.description}</p>}
+                  {act.description && <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-sans">{act.description}</p>}
                 </div>
               ))
             )}
@@ -272,112 +280,128 @@ export default function ProjectsPage() {
       )}
 
       {/* Add Project Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleCreateProject}
-            className="bg-surface border border-border rounded-lg max-w-lg w-full p-5 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-semibold text-sm text-foreground">Create Project Hub</h3>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="text-muted hover:text-foreground text-xs"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">Project Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. RegreT Personal Life OS"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">Description</label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Project architectural goals, problems solved, and scope..."
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">GitHub Repo</label>
-                  <input
-                    type="text"
-                    value={githubRepo}
-                    onChange={(e) => setGithubRepo(e.target.value)}
-                    placeholder="user/repository"
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bento-card max-w-lg w-full p-6 space-y-4 bg-white dark:bg-[#131A29]"
+            >
+              <form onSubmit={handleCreateProject}>
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                  <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
+                    Create Project Hub
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-mono text-muted mb-1">Vercel URL</label>
-                  <input
-                    type="text"
-                    value={vercelUrl}
-                    onChange={(e) => setVercelUrl(e.target.value)}
-                    placeholder="https://app.vercel.app"
-                    className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+
+                <div className="space-y-3.5 pt-3">
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. RegreT Personal Life OS"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Project architectural goals, problems solved, and scope..."
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        GitHub Repo
+                      </label>
+                      <input
+                        type="text"
+                        value={githubRepo}
+                        onChange={(e) => setGithubRepo(e.target.value)}
+                        placeholder="user/repository"
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Vercel URL
+                      </label>
+                      <input
+                        type="text"
+                        value={vercelUrl}
+                        onChange={(e) => setVercelUrl(e.target.value)}
+                        placeholder="https://app.vercel.app"
+                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Tech Stack (Comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={techStack}
+                      onChange={(e) => setTechStack(e.target.value)}
+                      placeholder="Next.js, TypeScript, PostgreSQL, Tailwind CSS"
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Screenshot Image URL (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={screenshotUrl}
+                      onChange={(e) => setScreenshotUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">
-                  Tech Stack (Comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={techStack}
-                  onChange={(e) => setTechStack(e.target.value)}
-                  placeholder="Next.js, TypeScript, PostgreSQL, Tailwind CSS"
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-muted mb-1">
-                  Screenshot Image URL (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={screenshotUrl}
-                  onChange={(e) => setScreenshotUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="btn-secondary text-xs"
-              >
-                Close
-              </button>
-              <button type="submit" className="btn-primary text-xs">
-                Save Project
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn-secondary text-xs py-2 px-4"
+                  >
+                    Close
+                  </button>
+                  <button type="submit" className="btn-primary text-xs py-2 px-5">
+                    Save Project
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
