@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { storage, INITIAL_CATEGORIES } from '../lib/storage';
 import { Activity, VocabularyWord, Flashcard, KnowledgeDocument, Project, Countdown, Habit } from '../lib/types';
-import { calculateNextReview } from '../lib/sr-algorithm';
+import { calculateNextReview, calculateMasteryLevel } from '../lib/sr-algorithm';
 import { compressImage } from '../lib/image-compress';
 
 describe('Wake Up Category Verification', () => {
@@ -96,10 +96,14 @@ describe('Vocabulary Spaced Repetition Mastery Progression', () => {
     card = { ...card, ...metrics };
     storage.updateFlashcard(card);
 
-    // Update word mastery level as FlashcardViewer does
-    if (metrics.repetitions >= 2) {
-      storage.updateVocabularyWord({ ...currentWord!, masteryLevel: 'reviewing' });
-    }
+    // Update word mastery level using domain function as FlashcardViewer does
+    const reviewingLevel = calculateMasteryLevel(
+      currentWord!.masteryLevel,
+      metrics.repetitions,
+      metrics.intervalDays,
+      4
+    );
+    storage.updateVocabularyWord({ ...currentWord!, masteryLevel: reviewingLevel });
     currentWord = storage.getVocabulary().find((w) => w.id === wordId);
     expect(currentWord?.masteryLevel).toBe('reviewing');
 
@@ -110,9 +114,13 @@ describe('Vocabulary Spaced Repetition Mastery Progression', () => {
     card = { ...card, ...metrics };
 
     expect(card.repetitions).toBeGreaterThanOrEqual(4);
-    if (card.repetitions >= 4 || card.intervalDays >= 21) {
-      storage.updateVocabularyWord({ ...currentWord!, masteryLevel: 'mastered' });
-    }
+    const masteredLevel = calculateMasteryLevel(
+      currentWord!.masteryLevel,
+      card.repetitions,
+      card.intervalDays,
+      5
+    );
+    storage.updateVocabularyWord({ ...currentWord!, masteryLevel: masteredLevel });
 
     currentWord = storage.getVocabulary().find((w) => w.id === wordId);
     expect(currentWord?.masteryLevel).toBe('mastered');

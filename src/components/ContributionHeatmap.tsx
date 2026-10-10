@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Activity, CategoryId } from '../lib/types';
 import { INITIAL_CATEGORIES } from '../lib/storage';
+import { calculateStreaks } from '../lib/analytics';
 
 interface ContributionHeatmapProps {
   activities: Activity[];
@@ -100,40 +101,12 @@ export default function ContributionHeatmap({
       weeks.push(weekDays);
     }
 
-    // Calculate streaks across valid past and today dates
-    let currentStreak = 0;
-    let longestStreak = 0;
-    let tempStreak = 0;
-    let totalActiveDays = 0;
-
-    for (let i = 0; i < pastAndTodayDays.length; i++) {
-      if (pastAndTodayDays[i].count > 0) {
-        totalActiveDays++;
-        tempStreak++;
-        if (tempStreak > longestStreak) longestStreak = tempStreak;
-      } else {
-        tempStreak = 0;
-      }
-    }
-
-    // Check current streak from today backwards
-    for (let i = pastAndTodayDays.length - 1; i >= 0; i--) {
-      if (pastAndTodayDays[i].count > 0) {
-        currentStreak++;
-      } else if (i === pastAndTodayDays.length - 1) {
-        // Today has 0 so far, can count previous days if active
-        continue;
-      } else {
-        break;
-      }
-    }
+    const streakStats = calculateStreaks(pastAndTodayDays);
 
     return {
       grid: weeks,
       stats: {
-        currentStreak,
-        longestStreak,
-        totalActiveDays,
+        ...streakStats,
         totalLogged: filteredActivities.length,
       },
     };

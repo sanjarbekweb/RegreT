@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { INITIAL_CATEGORIES, storage } from '../lib/storage';
 import { Activity, KnowledgeDocument, Flashcard } from '../lib/types';
+import { calculateStreaks } from '../lib/analytics';
 
 describe('Heatmap & Calendar Integrity', () => {
   it('includes all 11 core categories including reading, entertainment, media, and wakeup', () => {
@@ -30,24 +31,10 @@ describe('Heatmap & Calendar Integrity', () => {
   });
 
   it('calculates streaks correctly without breaking if today is pending activity', () => {
-    function calcStreak(counts: number[]): number {
-      let currentStreak = 0;
-      for (let i = counts.length - 1; i >= 0; i--) {
-        if (counts[i] > 0) {
-          currentStreak++;
-        } else if (i === counts.length - 1) {
-          continue; // Today pending
-        } else {
-          break;
-        }
-      }
-      return currentStreak;
-    }
-
-    expect(calcStreak([1, 1, 1, 1])).toBe(4);
-    expect(calcStreak([1, 1, 1, 0])).toBe(3);
-    expect(calcStreak([1, 1, 0, 0])).toBe(0);
-    expect(calcStreak([0, 0, 0, 0])).toBe(0);
+    expect(calculateStreaks([1, 1, 1, 1]).currentStreak).toBe(4);
+    expect(calculateStreaks([1, 1, 1, 0]).currentStreak).toBe(3);
+    expect(calculateStreaks([1, 1, 0, 0]).currentStreak).toBe(0);
+    expect(calculateStreaks([0, 0, 0, 0]).currentStreak).toBe(0);
   });
 });
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Flashcard } from '../lib/types';
-import { calculateNextReview, ReviewGrade } from '../lib/sr-algorithm';
+import { calculateNextReview, calculateMasteryLevel, ReviewGrade } from '../lib/sr-algorithm';
 import { storage } from '../lib/storage';
 import { RotateCw, Check, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
 
@@ -76,14 +76,12 @@ export default function FlashcardViewer({
         (w) => w.id === currentCard.vocabularyId || w.flashcardId === currentCard.id
       );
       if (word) {
-        let newLevel: 'learning' | 'reviewing' | 'mastered' = word.masteryLevel;
-        if (updatedMetrics.repetitions >= 4 || updatedMetrics.intervalDays >= 21) {
-          newLevel = 'mastered';
-        } else if (updatedMetrics.repetitions >= 2 || updatedMetrics.intervalDays >= 4) {
-          newLevel = 'reviewing';
-        } else if (grade === 1) {
-          newLevel = 'learning';
-        }
+        const newLevel = calculateMasteryLevel(
+          word.masteryLevel,
+          updatedMetrics.repetitions,
+          updatedMetrics.intervalDays,
+          grade
+        );
         if (newLevel !== word.masteryLevel) {
           storage.updateVocabularyWord({
             ...word,

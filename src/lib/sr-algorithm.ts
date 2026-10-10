@@ -46,8 +46,11 @@ export function calculateNextReview(
     easeFactor = 1.3;
   }
 
-  const nextDate = new Date(currentDate);
-  nextDate.setDate(nextDate.getDate() + intervalDays);
+  // Work strictly in UTC calendar dates to avoid local timezone offset and DST boundary drift
+  const nextDate = new Date(
+    Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate())
+  );
+  nextDate.setUTCDate(nextDate.getUTCDate() + intervalDays);
   const nextReviewAt = nextDate.toISOString().split('T')[0];
 
   return {
@@ -61,3 +64,32 @@ export function calculateNextReview(
 export function isCardDue(card: Flashcard, referenceDate: string = new Date().toISOString().split('T')[0]): boolean {
   return card.nextReviewAt <= referenceDate;
 }
+
+export type MasteryLevel = 'learning' | 'reviewing' | 'mastered';
+
+/**
+ * Calculates updated vocabulary word mastery level based on SM-2 repetition counts and interval days.
+ * Resets to 'learning' on grade 1 (Again).
+ * Preserves 'mastered' status on successful reviews (grade >= 3).
+ */
+export function calculateMasteryLevel(
+  currentLevel: MasteryLevel,
+  repetitions: number,
+  intervalDays: number,
+  grade?: ReviewGrade
+): MasteryLevel {
+  if (grade === 1) {
+    return 'learning';
+  }
+  if (currentLevel === 'mastered') {
+    return 'mastered';
+  }
+  if (repetitions >= 4 || intervalDays >= 21) {
+    return 'mastered';
+  }
+  if (repetitions >= 2 || intervalDays >= 4) {
+    return 'reviewing';
+  }
+  return currentLevel;
+}
+
