@@ -20,10 +20,10 @@ export default function BentoCard({
   const handleMouseEnter = () => {
     if (!cardRef.current) return;
     gsap.to(cardRef.current, {
-      y: -3,
-      duration: 0.25,
+      y: -2,
+      duration: 0.2,
       ease: 'power2.out',
-      boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.03)',
+      borderColor: 'rgba(56, 139, 253, 0.4)',
     });
   };
 
@@ -31,9 +31,9 @@ export default function BentoCard({
     if (!cardRef.current) return;
     gsap.to(cardRef.current, {
       y: 0,
-      duration: 0.35,
+      duration: 0.25,
       ease: 'power2.out',
-      boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02)',
+      borderColor: '#1E293B',
     });
   };
 
@@ -42,7 +42,7 @@ export default function BentoCard({
       ref={cardRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`bento-card bg-white dark:bg-[#131A29] ${className}`}
+      className={`workspace-panel bg-[#111827] border border-[#1E293B] ${className}`}
       {...props}
     >
       {children}

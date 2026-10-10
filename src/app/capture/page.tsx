@@ -11,15 +11,11 @@ import {
   Clock,
   Play,
   Pause,
-  Square,
   FolderGit2,
-  ExternalLink,
   BookOpen,
   Film,
   Check,
-  Video,
   X,
-  Sparkles,
 } from 'lucide-react';
 import { INITIAL_CATEGORIES, INITIAL_PROJECTS, storage } from '../../lib/storage';
 import { Activity, CategoryId, Attachment } from '../../lib/types';
@@ -33,7 +29,7 @@ export default function QuickCapturePage() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [title, setTitle] = useState('');
-  const [categoryId, setCategoryId] = useState<CategoryId>('wakeup');
+  const [categoryId, setCategoryId] = useState<CategoryId>('coding');
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -160,30 +156,25 @@ export default function QuickCapturePage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        const compressed = await compressImage(file, 1280, 0.8);
+        const result = await compressImage(file, 1400, 0.82);
         const newAtt: Attachment = {
           id: `att-${Date.now()}-${i}`,
-          url: compressed.dataUrl,
+          url: result.dataUrl,
           mimeType: file.type || 'image/jpeg',
           originalName: file.name,
-          caption: '',
-          sizeBytes: compressed.sizeBytes,
+          caption: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+          sizeBytes: result.sizeBytes,
           createdAt: new Date().toISOString(),
         };
         setAttachments((prev) => [...prev, newAtt]);
       } catch (err) {
-        console.error('Failed to compress image:', err);
+        console.error('Image processing failed:', err);
       }
     }
   };
 
   const handleRemoveAttachment = (attId: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== attId));
-    setCaptions((prev) => {
-      const copy = { ...prev };
-      delete copy[attId];
-      return copy;
-    });
   };
 
   const handleSaveActivity = (e: React.FormEvent) => {
@@ -191,12 +182,19 @@ export default function QuickCapturePage() {
     if (!title.trim()) return;
 
     const now = new Date();
-    const startedAt = timerStartIso || now.toISOString();
-    const endedAt = timerSeconds > 0 ? now.toISOString() : undefined;
+    let startedAt = now.toISOString();
+    let endedAt: string | undefined = undefined;
+
+    if (timerStartIso && timerSeconds > 0) {
+      startedAt = timerStartIso;
+      endedAt = now.toISOString();
+    } else {
+      endedAt = now.toISOString();
+    }
 
     const parsedTags = tagsInput
       .split(',')
-      .map((t) => t.trim().replace(/^#/, ''))
+      .map((t) => t.trim().toLowerCase())
       .filter((t) => t.length > 0);
 
     const updatedAttachments = attachments.map((att) => ({
@@ -246,27 +244,27 @@ export default function QuickCapturePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-7">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
-        <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-          Capture Hub
+      <div className="border-b border-[#1E293B] pb-3">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+          Quick Capture Hub
         </div>
-        <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
-          Record Life Activity
+        <h1 className="text-2xl font-sans font-semibold tracking-tight text-[#F0F6FC] mt-0.5">
+          Record Activity
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl font-sans">
-          Permanent chronological logging for morning routine, coding sessions, lessons, readings, and media.
+        <p className="text-xs text-[#8B949E] mt-0.5">
+          Effortless chronological logging with photo attachments and focus timer.
         </p>
       </div>
 
-      <form onSubmit={handleSaveActivity} className="space-y-6">
-        {/* Category Selector Grid (Bento squircle pills) */}
-        <div className="space-y-2.5">
-          <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+      <form onSubmit={handleSaveActivity} className="space-y-5">
+        {/* Category Selector Grid */}
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-[#8B949E] uppercase tracking-wider">
             Select Category
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {INITIAL_CATEGORIES.map((cat) => {
               const isSelected = categoryId === cat.id;
               return (
@@ -274,32 +272,29 @@ export default function QuickCapturePage() {
                   type="button"
                   key={cat.id}
                   onClick={() => setCategoryId(cat.id)}
-                  className={`p-3 rounded-2xl border text-left transition-all text-xs flex flex-col justify-between ${
+                  className={`p-2.5 rounded-md border text-left transition-colors text-xs flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-lime text-slate-950 font-bold border-lime shadow-sm ring-2 ring-lime/40'
-                      : 'bg-white dark:bg-[#131A29] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:border-slate-300 shadow-sm'
+                      ? 'bg-[#161F2E] border-[#388BFD] text-[#F0F6FC] ring-1 ring-[#388BFD]/50'
+                      : 'bg-[#111827] border-[#1E293B] text-[#8B949E] hover:text-[#F0F6FC] hover:border-[#334155]'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="font-display font-bold">{cat.name}</span>
+                    <span className="font-medium truncate">{cat.name}</span>
                     <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: isSelected ? '#0F172A' : cat.color }}
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: isSelected ? '#388BFD' : '#64748B' }}
                     />
                   </div>
-                  <span className={`text-[10px] mt-1.5 line-clamp-1 ${isSelected ? 'text-slate-950/80 font-medium' : 'text-slate-400'}`}>
-                    {cat.description}
-                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Title & Description Bento Card */}
-        <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
+        {/* Title & Notes Workspace Panel */}
+        <div className="workspace-panel p-5 space-y-4 bg-[#111827] border border-[#1E293B]">
           <div>
-            <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+            <label className="block text-xs font-medium text-[#8B949E] uppercase mb-1">
               Activity Title *
             </label>
             <input
@@ -307,23 +302,13 @@ export default function QuickCapturePage() {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={
-                categoryId === 'personal'
-                  ? 'e.g. Woke up at 06:15, Hydration protocol'
-                  : categoryId === 'coding'
-                  ? 'e.g. Built Personal OS timeline & database persistence'
-                  : categoryId === 'reading'
-                  ? 'e.g. Read Chapter 4 of Deep Work'
-                  : categoryId === 'entertainment'
-                  ? 'e.g. F1 Monza Grand Prix Qualifying'
-                  : 'e.g. Completed Business strategy case homework'
-              }
-              className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime font-sans"
+              placeholder="e.g. Built Linear dark foundation & Apple Photos archive"
+              className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] placeholder:text-[#64748B] focus:outline-none focus:border-[#388BFD]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+            <label className="block text-xs font-medium text-[#8B949E] uppercase mb-1">
               Notes & Reflections
             </label>
             <textarea
@@ -331,14 +316,14 @@ export default function QuickCapturePage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Document the exact details, metrics, key thoughts, or reflections..."
-              className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime resize-none font-sans leading-relaxed"
+              className="w-full bg-[#090D12] border border-[#1E293B] rounded-md p-3 text-xs text-[#F0F6FC] placeholder:text-[#64748B] focus:outline-none focus:border-[#388BFD] resize-none leading-relaxed"
             />
           </div>
 
           {/* Tags & Project Link */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+              <label className="block text-xs font-medium text-[#8B949E] uppercase mb-1">
                 Tags (comma separated)
               </label>
               <input
@@ -346,17 +331,17 @@ export default function QuickCapturePage() {
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="routine, discipline, focus"
-                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] placeholder:text-[#64748B] focus:outline-none focus:border-[#388BFD]"
               />
             </div>
             <div>
-              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+              <label className="block text-xs font-medium text-[#8B949E] uppercase mb-1">
                 Attach to Project (Optional)
               </label>
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime font-display font-semibold"
+                className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
               >
                 <option value="">None / General Log</option>
                 {INITIAL_PROJECTS.map((p) => (
@@ -372,14 +357,14 @@ export default function QuickCapturePage() {
         {/* Dynamic Category Contexts */}
         {/* If Coding */}
         {categoryId === 'coding' && (
-          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-iris">
-              <FolderGit2 className="w-4 h-4" />
+          <div className="workspace-panel p-5 space-y-3 bg-[#111827] border border-[#1E293B]">
+            <div className="flex items-center gap-2 pb-2 border-b border-[#1E293B] text-xs font-medium text-[#388BFD]">
+              <FolderGit2 className="w-3.5 h-3.5" />
               <span>Developer Integration Context</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   GitHub Repo
                 </label>
                 <input
@@ -387,11 +372,11 @@ export default function QuickCapturePage() {
                   value={githubRepo}
                   onChange={(e) => setGithubRepo(e.target.value)}
                   placeholder="sanjarbekweb/regret-os"
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   Commit Message / Hash
                 </label>
                 <input
@@ -399,12 +384,12 @@ export default function QuickCapturePage() {
                   value={githubCommit}
                   onChange={(e) => setGithubCommit(e.target.value)}
                   placeholder="feat: add interactive contribution calendar"
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[#8B949E] mb-1">
                 Vercel Deployment URL
               </label>
               <input
@@ -412,7 +397,7 @@ export default function QuickCapturePage() {
                 value={vercelUrl}
                 onChange={(e) => setVercelUrl(e.target.value)}
                 placeholder="https://regret-os.vercel.app"
-                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
               />
             </div>
           </div>
@@ -420,14 +405,14 @@ export default function QuickCapturePage() {
 
         {/* If Reading */}
         {categoryId === 'reading' && (
-          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-iris">
-              <BookOpen className="w-4 h-4" />
+          <div className="workspace-panel p-5 space-y-3 bg-[#111827] border border-[#1E293B]">
+            <div className="flex items-center gap-2 pb-2 border-b border-[#1E293B] text-xs font-medium text-[#388BFD]">
+              <BookOpen className="w-3.5 h-3.5" />
               <span>Book Quote & Literature Context</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   Book / Paper Title
                 </label>
                 <input
@@ -435,11 +420,11 @@ export default function QuickCapturePage() {
                   value={bookTitle}
                   onChange={(e) => setBookTitle(e.target.value)}
                   placeholder="Deep Work"
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   Author
                 </label>
                 <input
@@ -447,12 +432,12 @@ export default function QuickCapturePage() {
                   value={bookAuthor}
                   onChange={(e) => setBookAuthor(e.target.value)}
                   placeholder="Cal Newport"
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[#8B949E] mb-1">
                 Key Quotation / Excerpt
               </label>
               <textarea
@@ -460,11 +445,11 @@ export default function QuickCapturePage() {
                 value={bookQuote}
                 onChange={(e) => setBookQuote(e.target.value)}
                 placeholder="Paste verbatim quote from book or upload photo of the page below..."
-                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
+                className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD] resize-none"
               />
             </div>
             <div className="w-32">
-              <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[#8B949E] mb-1">
                 Page Number
               </label>
               <input
@@ -472,7 +457,7 @@ export default function QuickCapturePage() {
                 value={bookPage}
                 onChange={(e) => setBookPage(e.target.value)}
                 placeholder="42"
-                className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
               />
             </div>
           </div>
@@ -480,20 +465,20 @@ export default function QuickCapturePage() {
 
         {/* If Entertainment or Media */}
         {(categoryId === 'entertainment' || categoryId === 'media') && (
-          <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-white/[0.06] text-xs font-display font-bold text-coral">
-              <Film className="w-4 h-4" />
+          <div className="workspace-panel p-5 space-y-3 bg-[#111827] border border-[#1E293B]">
+            <div className="flex items-center gap-2 pb-2 border-b border-[#1E293B] text-xs font-medium text-[#388BFD]">
+              <Film className="w-3.5 h-3.5" />
               <span>Media & Entertainment Details</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   Media Type
                 </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 >
                   <option value="f1">Formula 1</option>
                   <option value="anime">Anime</option>
@@ -504,7 +489,7 @@ export default function QuickCapturePage() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-[#8B949E] mb-1">
                   Title
                 </label>
                 <input
@@ -512,7 +497,7 @@ export default function QuickCapturePage() {
                   value={mediaTitle}
                   onChange={(e) => setMediaTitle(e.target.value)}
                   placeholder="e.g. Monza Grand Prix 2026 or Interstellar Soundtrack"
-                  className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                  className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                 />
               </div>
             </div>
@@ -520,36 +505,36 @@ export default function QuickCapturePage() {
         )}
 
         {/* Live Session Timer */}
-        <div className="bento-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#131A29]">
+        <div className="workspace-panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111827] border border-[#1E293B]">
           <div>
-            <div className="text-xs font-display font-bold text-slate-400 uppercase tracking-wider">
-              Session Duration
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+              Focus Session Timer
             </div>
-            <div className="text-3xl font-display font-black text-slate-900 dark:text-white mt-1">
+            <div className="text-2xl font-mono font-semibold text-[#F0F6FC] mt-0.5">
               {formatTimer(timerSeconds)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
-              {timerRunning ? 'Session active and recording...' : 'Optional live duration logging'}
+            <div className="text-[11px] text-[#8B949E]">
+              {timerRunning ? 'Timer active and recording...' : 'Optional live duration logging'}
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {!timerRunning ? (
               <button
                 type="button"
                 onClick={handleStartTimer}
-                className="btn-secondary text-xs py-2 px-4 gap-2"
+                className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
               >
-                <Play className="w-3.5 h-3.5 text-emerald-600" />
+                <Play className="w-3 h-3 text-[#238636]" />
                 <span>Start Timer</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleStopTimer}
-                className="btn-secondary text-xs py-2 px-4 gap-2"
+                className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
               >
-                <Pause className="w-3.5 h-3.5 text-amber-500" />
+                <Pause className="w-3 h-3 text-[#D29922]" />
                 <span>Pause</span>
               </button>
             )}
@@ -561,7 +546,7 @@ export default function QuickCapturePage() {
                   setTimerSeconds(0);
                   setTimerStartIso(null);
                 }}
-                className="text-xs text-coral hover:underline px-2 font-display font-bold"
+                className="text-xs text-[#F85149] hover:underline px-2"
               >
                 Reset
               </button>
@@ -570,31 +555,31 @@ export default function QuickCapturePage() {
         </div>
 
         {/* Photos & Multi-Media Upload */}
-        <div className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29]">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+        <div className="workspace-panel p-5 space-y-4 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
             <div>
-              <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Permanent Proof & Visuals
+              <div className="text-xs font-semibold text-[#F0F6FC]">
+                Photo Archive Attachments
               </div>
-              <div className="text-[11px] text-slate-400">
-                Selfies, coding screenshots, textbook pages, whiteboard sketches
+              <div className="text-[11px] text-[#8B949E]">
+                Photos attached to this activity will appear in your Apple Photos style Media Archive.
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={startCamera}
-                className="btn-primary text-xs py-1.5 px-3.5 gap-1.5"
+                className="btn-primary text-xs py-1.5 px-3 gap-1.5"
               >
-                <Camera className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Camera className="w-3.5 h-3.5" />
                 <span>Camera</span>
               </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="btn-secondary text-xs py-1.5 px-3.5 gap-1.5"
+                className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
               >
-                <Upload className="w-3.5 h-3.5 text-iris" />
+                <Upload className="w-3.5 h-3.5" />
                 <span>Upload</span>
               </button>
             </div>
@@ -617,17 +602,17 @@ export default function QuickCapturePage() {
           </div>
 
           {cameraError && (
-            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 text-xs">
+            <div className="p-3 rounded-md bg-[#D29922]/10 border border-[#D29922]/30 text-[#D29922] text-xs">
               {cameraError}
             </div>
           )}
 
           {/* Photo Preview Grid */}
           {attachments.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {attachments.map((att) => (
-                <div key={att.id} className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-2.5 space-y-2 bg-slate-50 dark:bg-white/[0.02]">
-                  <div className="relative rounded-xl overflow-hidden h-36 bg-black">
+                <div key={att.id} className="rounded-md border border-[#1E293B] p-2 space-y-2 bg-[#0D1117]">
+                  <div className="relative rounded overflow-hidden h-36 bg-black">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={att.url}
@@ -637,7 +622,7 @@ export default function QuickCapturePage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(att.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-950/80 text-coral hover:bg-slate-950"
+                      className="absolute top-2 right-2 p-1 rounded bg-[#090D12]/80 text-[#F85149] hover:bg-[#090D12]"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -646,41 +631,37 @@ export default function QuickCapturePage() {
                     type="text"
                     value={captions[att.id] || ''}
                     onChange={(e) => setCaptions({ ...captions, [att.id]: e.target.value })}
-                    placeholder="Add caption (e.g. 06:15 selfie, terminal output)..."
-                    className="w-full bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-lime"
+                    placeholder="Add caption for archive..."
+                    className="w-full bg-[#090D12] border border-[#1E293B] rounded px-2.5 py-1 text-[11px] text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                   />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="border-2 border-dashed border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 text-center space-y-2.5">
-              <Camera className="w-8 h-8 text-slate-300 mx-auto" />
-              <div>
-                <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
-                  {categoryId === 'wakeup'
-                    ? 'Take your wake-up selfie verification'
-                    : 'Capture camera proof or upload screenshot'}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Stored permanently in your life operating system
-                </div>
+            <div className="border border-dashed border-[#1E293B] rounded-md p-6 text-center space-y-1.5">
+              <Camera className="w-6 h-6 text-[#64748B] mx-auto" />
+              <div className="text-xs font-medium text-[#8B949E]">
+                No photos attached yet
+              </div>
+              <div className="text-[10px] text-[#64748B]">
+                Snap proof from camera or upload screenshots
               </div>
             </div>
           )}
         </div>
 
         {/* Submit Actions */}
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex items-center justify-end gap-2 pt-2">
           <button
             type="button"
             onClick={() => router.back()}
-            className="btn-secondary text-xs py-2.5 px-5"
+            className="btn-secondary text-xs py-1.5 px-3"
           >
             Cancel
           </button>
-          <button type="submit" className="btn-primary text-xs py-2.5 px-6 gap-2">
-            <Check className="w-4 h-4 stroke-[3]" />
-            <span>Save to Permanent Life OS</span>
+          <button type="submit" className="btn-primary text-xs py-1.5 px-4 gap-1.5">
+            <Check className="w-3.5 h-3.5" />
+            <span>Record Activity</span>
           </button>
         </div>
       </form>
@@ -688,30 +669,30 @@ export default function QuickCapturePage() {
       {/* Live Camera Snapshot Modal */}
       <AnimatePresence>
         {showCameraModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-[#090D12]/85 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bento-card max-w-md w-full p-5 space-y-4 bg-white dark:bg-[#131A29]"
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="workspace-panel max-w-md w-full p-4 space-y-3 bg-[#111827] border border-[#1E293B]"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-2.5">
+              <div className="flex items-center justify-between border-b border-[#1E293B] pb-2">
                 <div className="flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-iris" />
-                  <span className="text-xs font-display font-bold text-slate-900 dark:text-white">
-                    {categoryId === 'wakeup' ? 'Wake-Up Selfie Verification' : 'Camera Snapshot'}
+                  <Camera className="w-4 h-4 text-[#388BFD]" />
+                  <span className="text-xs font-medium text-[#F0F6FC]">
+                    Camera Snapshot
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={stopCamera}
-                  className="text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold"
+                  className="text-[#64748B] hover:text-[#F0F6FC]"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="relative rounded-2xl overflow-hidden aspect-video bg-black flex items-center justify-center border border-slate-200 dark:border-white/[0.08]">
+              <div className="relative rounded overflow-hidden aspect-video bg-black flex items-center justify-center border border-[#1E293B]">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -722,23 +703,23 @@ export default function QuickCapturePage() {
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400 font-mono">
-                  {categoryId === 'wakeup' ? 'Verify wake-up timestamp' : 'Frame your capture'}
+                <span className="text-[11px] text-[#64748B] font-mono">
+                  Frame your shot
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={stopCamera}
-                    className="btn-secondary text-xs py-1.5 px-3"
+                    className="btn-secondary text-xs py-1 px-2.5"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={snapPhoto}
-                    className="btn-primary text-xs py-1.5 px-4 gap-1.5"
+                    className="btn-primary text-xs py-1 px-3 gap-1"
                   >
-                    <Camera className="w-3.5 h-3.5" />
+                    <Camera className="w-3 h-3" />
                     <span>Snap Photo</span>
                   </button>
                 </div>

@@ -6,13 +6,9 @@ import {
   Hourglass,
   Plus,
   ExternalLink,
-  CheckCircle2,
-  Circle,
-  Calendar,
-  AlertTriangle,
-  Clock,
   Trash2,
   Check,
+  X,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Countdown } from '../../lib/types';
@@ -98,15 +94,17 @@ export default function CountdownsPage() {
     setChecklistItems('');
   };
 
-  const calculateTimeBreakdown = (targetStr: string) => {
-    const diff = new Date(targetStr).getTime() - now.getTime();
+  const calculateTimeBreakdown = (targetDateStr: string) => {
+    const diff = new Date(targetDateStr).getTime() - now.getTime();
     if (diff <= 0) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true };
     }
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
     return { days, hours, minutes, seconds, isPast: false };
   };
 
@@ -115,146 +113,148 @@ export default function CountdownsPage() {
   );
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#1E293B]">
         <div>
-          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
             Critical Deadlines & Timelines
           </div>
-          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-2xl font-sans font-semibold tracking-tight text-[#F0F6FC] mt-0.5">
             Countdowns & Milestones
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
+          <p className="text-xs text-[#8B949E] mt-0.5">
             Real-time countdown clocks for university applications, exams, competitions, and project releases.
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
+          className="btn-primary text-xs py-1.5 px-3 self-start sm:self-auto gap-1.5"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Add Deadline</span>
         </button>
       </div>
 
-      {/* Countdown Cards Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Countdown Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sortedCountdowns.map((cd) => {
           const time = calculateTimeBreakdown(cd.targetDate);
           return (
-            <motion.div
+            <div
               key={cd.id}
-              whileHover={{ y: -3 }}
-              className="bento-card p-6 space-y-4 bg-white dark:bg-[#131A29] flex flex-col justify-between"
+              className="workspace-panel p-5 space-y-4 bg-[#111827] border border-[#1E293B] flex flex-col justify-between"
             >
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {/* Meta Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200 uppercase">
+                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-[#161F2E] text-[#8B949E] border border-[#1E293B]">
                         {cd.category}
                       </span>
                       <span
-                        className={`text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full uppercase ${
+                        className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border ${
                           cd.priority === 'urgent'
-                            ? 'bg-coral/15 text-coral-dark dark:text-coral border border-coral/30'
+                            ? 'bg-[#F85149]/10 text-[#F85149] border-[#F85149]/30'
                             : cd.priority === 'high'
-                            ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
-                            : 'bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'
+                            ? 'bg-[#D29922]/10 text-[#D29922] border-[#D29922]/30'
+                            : 'bg-[#161F2E] text-[#8B949E] border-[#1E293B]'
                         }`}
                       >
                         {cd.priority}
                       </span>
                     </div>
-                    <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+                    <h3 className="font-semibold text-base text-[#F0F6FC] mt-1.5">
                       {cd.title}
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {cd.targetUrl && (
                       <a
                         href={cd.targetUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-iris transition-colors"
+                        className="p-1 rounded text-[#8B949E] hover:text-[#388BFD] transition-colors"
                         title="Open portal"
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     )}
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCountdown(cd.id, e)}
-                      className="p-2 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
+                      className="p-1 rounded text-[#484F58] hover:text-[#F85149] transition-colors"
                       title="Delete Deadline"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Live Countdown Clock Ticker (Image 4 Virage.ai Bento Ticker Style) */}
-                <div className="grid grid-cols-4 gap-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.06] rounded-2xl p-3.5 text-center">
-                  <div className="p-1">
-                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
+                {/* Linear-style Ticker Clock */}
+                <div className="grid grid-cols-4 gap-2 bg-[#0D1117] border border-[#1E293B] rounded-md p-3 text-center">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC]">
                       {time.days}
                     </div>
-                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Days</div>
+                    <div className="text-[9px] font-mono uppercase text-[#64748B] mt-0.5">Days</div>
                   </div>
-                  <div className="p-1">
-                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC]">
                       {time.hours}
                     </div>
-                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Hours</div>
+                    <div className="text-[9px] font-mono uppercase text-[#64748B] mt-0.5">Hours</div>
                   </div>
-                  <div className="p-1">
-                    <div className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-white">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC]">
                       {time.minutes}
                     </div>
-                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Mins</div>
+                    <div className="text-[9px] font-mono uppercase text-[#64748B] mt-0.5">Mins</div>
                   </div>
-                  <div className="p-1">
-                    <div className="text-2xl sm:text-3xl font-display font-black text-iris dark:text-lime">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-mono font-semibold text-[#388BFD]">
                       {time.seconds}
                     </div>
-                    <div className="text-[10px] font-display font-bold text-slate-400 uppercase mt-0.5">Secs</div>
+                    <div className="text-[9px] font-mono uppercase text-[#64748B] mt-0.5">Secs</div>
                   </div>
                 </div>
 
                 {cd.description && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans">{cd.description}</p>
+                  <p className="text-xs text-[#8B949E] leading-relaxed">
+                    {cd.description}
+                  </p>
                 )}
 
-                {/* Requirements Checklist */}
+                {/* Milestone Checklist */}
                 {cd.checklist && cd.checklist.length > 0 && (
-                  <div className="space-y-2 pt-1">
-                    <div className="text-[11px] font-display font-bold text-slate-400 uppercase tracking-wider">
-                      Action Checklist:
+                  <div className="space-y-1.5 pt-2 border-t border-[#1E293B]">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+                      Milestone Action Items
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {cd.checklist.map((item) => (
                         <button
                           key={item.id}
+                          type="button"
                           onClick={() => handleToggleChecklist(cd.id, item.id)}
-                          className="w-full text-left flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] text-xs transition-colors hover:border-slate-300"
+                          className={`w-full flex items-center gap-2 p-1.5 rounded text-left text-xs transition-colors ${
+                            item.done
+                              ? 'text-[#64748B] line-through'
+                              : 'text-[#F0F6FC] hover:bg-[#161F2E]/60'
+                          }`}
                         >
                           <div
-                            className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                              item.done ? 'bg-mint text-slate-950' : 'border border-slate-300 dark:border-slate-600'
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center transition-colors shrink-0 ${
+                              item.done
+                                ? 'bg-[#238636] text-white'
+                                : 'border border-[#334155]'
                             }`}
                           >
-                            {item.done && <Check className="w-3 h-3 stroke-[3]" />}
+                            {item.done && <Check className="w-2.5 h-2.5 stroke-[2.5]" />}
                           </div>
-                          <span
-                            className={`flex-1 font-sans ${
-                              item.done ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200 font-medium'
-                            }`}
-                          >
-                            {item.text}
-                          </span>
+                          <span className="truncate">{item.text}</span>
                         </button>
                       ))}
                     </div>
@@ -262,17 +262,11 @@ export default function CountdownsPage() {
                 )}
               </div>
 
-              {/* Footer Stamp */}
-              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs font-display">
-                <span className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  Target: {cd.targetDate.replace('T', ' ')}
-                </span>
-                <span className={time.isPast ? 'text-coral font-bold' : 'text-emerald-600 dark:text-mint font-bold'}>
-                  {time.isPast ? 'Deadline Passed' : 'Active'}
-                </span>
+              <div className="pt-2 border-t border-[#1E293B] text-[10px] font-mono text-[#64748B] flex items-center justify-between">
+                <span>Target: {cd.targetDate.replace('T', ' ')}</span>
+                <span>{time.isPast ? 'Passed' : 'Pending'}</span>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
@@ -280,31 +274,31 @@ export default function CountdownsPage() {
       {/* Add Countdown Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-[#090D12]/80 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bento-card max-w-lg w-full p-6 space-y-4 bg-white dark:bg-[#131A29]"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="workspace-panel max-w-lg w-full p-5 space-y-4 bg-[#111827] border border-[#1E293B]"
             >
               <form onSubmit={handleCreateCountdown}>
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-                  <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
-                    Add New Target Deadline
+                <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+                  <h3 className="text-xs font-semibold text-[#F0F6FC] uppercase tracking-wider">
+                    Add Critical Deadline
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
+                    className="text-[#64748B] hover:text-[#F0F6FC]"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-3.5 pt-3">
+                <div className="space-y-3 pt-3">
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Title *
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                      Deadline Title *
                     </label>
                     <input
                       type="text"
@@ -312,13 +306,13 @@ export default function CountdownsPage() {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g. Oxford MSc Computer Science Application"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
                         Target Date & Time *
                       </label>
                       <input
@@ -326,36 +320,17 @@ export default function CountdownsPage() {
                         required
                         value={targetDate}
                         onChange={(e) => setTargetDate(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Category
-                      </label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value as any)}
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
-                      >
-                        <option value="university">University Application</option>
-                        <option value="exam">Exam / Certification</option>
-                        <option value="competition">Competition / Hackathon</option>
-                        <option value="project">Project Launch</option>
-                        <option value="personal">Personal Milestone</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Priority
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                        Priority Level
                       </label>
                       <select
                         value={priority}
                         onChange={(e) => setPriority(e.target.value as any)}
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                       >
                         <option value="urgent">Urgent</option>
                         <option value="high">High</option>
@@ -363,56 +338,62 @@ export default function CountdownsPage() {
                         <option value="low">Low</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Portal URL (Optional)
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value as any)}
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
+                      >
+                        <option value="university">University</option>
+                        <option value="exam">Exam</option>
+                        <option value="competition">Competition</option>
+                        <option value="project">Project</option>
+                        <option value="personal">Personal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                        Portal / Web URL
                       </label>
                       <input
                         type="text"
                         value={targetUrl}
                         onChange={(e) => setTargetUrl(e.target.value)}
                         placeholder="https://..."
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Notes / Description
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Required documents, test scores, letters of reference..."
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Checklist Items (One per line)
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                      Milestone Action Items (One per line)
                     </label>
                     <textarea
                       rows={3}
                       value={checklistItems}
                       onChange={(e) => setChecklistItems(e.target.value)}
-                      placeholder="Official transcripts&#10;Statement of Purpose draft&#10;Reference letters"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none font-mono"
+                      placeholder="Submit transcript&#10;Request reference letters&#10;Record video prompt"
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md p-2.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD] resize-none"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#1E293B] mt-4">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="btn-secondary text-xs py-2 px-4"
+                    className="btn-secondary text-xs py-1.5 px-3"
                   >
-                    Close
+                    Cancel
                   </button>
-                  <button type="submit" className="btn-primary text-xs py-2 px-5">
+                  <button type="submit" className="btn-primary text-xs py-1.5 px-3">
                     Save Deadline
                   </button>
                 </div>

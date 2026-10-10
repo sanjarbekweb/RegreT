@@ -7,12 +7,10 @@ import {
   FolderGit2,
   ExternalLink,
   Plus,
-  GitCommit,
   GitBranch,
   Terminal,
-  Activity as ActivityIcon,
-  Maximize2,
   Trash2,
+  X,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Project, Activity } from '../../lib/types';
@@ -97,80 +95,79 @@ export default function ProjectsPage() {
   );
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#1E293B]">
         <div>
-          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
             Developer Workspace
           </div>
-          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-2xl font-sans font-semibold tracking-tight text-[#F0F6FC] mt-0.5">
             Project Studio & Repos
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
+          <p className="text-xs text-[#8B949E] mt-0.5">
             Link GitHub repositories, Vercel deployments, screenshots, and coding activity logs.
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
+          className="btn-primary text-xs py-1.5 px-3 self-start sm:self-auto gap-1.5"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Project</span>
         </button>
       </div>
 
-      {/* Main Grid: Project Cards (Bento style) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Main Grid: Project Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {projects.map((proj) => {
           const isSelected = selectedProj?.id === proj.id;
           return (
-            <motion.div
+            <div
               key={proj.id}
-              whileHover={{ y: -3 }}
               onClick={() => setSelectedProjectId(proj.id)}
-              className={`bento-card p-6 space-y-4 cursor-pointer transition-all bg-white dark:bg-[#131A29] ${
+              className={`workspace-panel p-5 space-y-3.5 cursor-pointer transition-colors bg-[#111827] border ${
                 isSelected
-                  ? 'ring-2 ring-lime shadow-md border-lime/40'
-                  : 'hover:border-slate-300 dark:hover:border-white/[0.12]'
+                  ? 'border-[#388BFD] ring-1 ring-[#388BFD]/40'
+                  : 'border-[#1E293B] hover:border-[#334155]'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 uppercase">
+                    <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-[#161F2E] text-[#238636] border border-[#238636]/30">
                       {proj.status}
                     </span>
-                    <span className="text-xs font-mono text-slate-400">
+                    <span className="text-[10px] font-mono text-[#64748B]">
                       Updated {proj.updatedAt.split('T')[0]}
                     </span>
                   </div>
-                  <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+                  <h3 className="font-semibold text-base text-[#F0F6FC] mt-1.5">
                     {proj.name}
                   </h3>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={(e) => handleDeleteProject(proj.id, e)}
-                    className="p-1.5 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
+                    className="p-1 rounded text-[#484F58] hover:text-[#F85149] transition-colors"
                     title="Delete Project"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <div className="w-9 h-9 rounded-2xl bg-lime/20 flex items-center justify-center">
-                    <FolderGit2 className="w-4 h-4 text-slate-950 dark:text-lime" />
+                  <div className="w-7 h-7 rounded-md bg-[#161F2E] border border-[#232E3E] text-[#388BFD] flex items-center justify-center">
+                    <FolderGit2 className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 font-sans">
+              <p className="text-xs text-[#8B949E] leading-relaxed line-clamp-2">
                 {proj.description}
               </p>
 
               {/* Screenshots preview */}
               {proj.screenshots.length > 0 && (
-                <div className="h-36 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/[0.08] bg-black">
+                <div className="h-32 rounded-md overflow-hidden border border-[#1E293B] bg-black">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={proj.screenshots[0]}
@@ -181,7 +178,7 @@ export default function ProjectsPage() {
               )}
 
               {/* Integrations & Tech */}
-              <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+              <div className="space-y-2 pt-2 border-t border-[#1E293B]">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                   {proj.githubRepo && (
                     <a
@@ -189,11 +186,11 @@ export default function ProjectsPage() {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-white/[0.06] px-3 py-1 rounded-full text-slate-800 dark:text-slate-200 hover:bg-slate-200/80 transition-colors"
+                      className="inline-flex items-center gap-1.5 bg-[#0D1117] border border-[#1E293B] px-2.5 py-1 rounded text-[#F0F6FC] hover:border-[#388BFD]/50 transition-colors"
                     >
-                      <GitBranch className="w-3.5 h-3.5 text-slate-500" />
+                      <GitBranch className="w-3 h-3 text-[#388BFD]" />
                       <span>{proj.githubRepo}</span>
-                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                      <ExternalLink className="w-2.5 h-2.5 text-[#64748B]" />
                     </a>
                   )}
                   {proj.vercelUrl && (
@@ -202,76 +199,76 @@ export default function ProjectsPage() {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1 rounded-full text-iris hover:underline font-semibold"
+                      className="inline-flex items-center gap-1.5 bg-[#0D1117] border border-[#1E293B] px-2.5 py-1 rounded text-[#388BFD] hover:underline"
                     >
-                      <Terminal className="w-3.5 h-3.5" />
-                      <span>Vercel Deploy</span>
+                      <Terminal className="w-3 h-3" />
+                      <span>Deployment</span>
                     </a>
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap gap-1 pt-1">
                   {proj.techStack.map((tech) => (
                     <span
                       key={tech}
-                      className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.06]"
+                      className="text-[9px] font-mono px-2 py-0.2 rounded bg-[#0D1117] text-[#8B949E] border border-[#1E293B]"
                     >
                       {tech}
                     </span>
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
 
       {/* Selected Project Connected Coding Timeline */}
       {selectedProj && (
-        <div className="bento-card p-6 md:p-7 space-y-5 bg-white dark:bg-[#131A29]">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3.5">
+        <div className="workspace-panel p-5 space-y-4 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
             <div>
-              <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
+              <h3 className="text-xs font-semibold text-[#F0F6FC] uppercase tracking-wider">
                 Development Activity Logs: {selectedProj.name}
               </h3>
-              <div className="text-xs text-slate-400 font-mono mt-0.5">
+              <div className="text-[11px] text-[#64748B] font-mono mt-0.5">
                 {projectActivities.length} coding sessions linked to this repository
               </div>
             </div>
             <Link
               href="/capture"
-              className="btn-secondary text-xs py-2 px-4 gap-1.5"
+              className="btn-secondary text-xs py-1.5 px-3 gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5 text-iris" />
+              <Plus className="w-3.5 h-3.5 text-[#388BFD]" />
               <span>Log Coding Session</span>
             </Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {projectActivities.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
-                No coding logs associated with this project yet. Use Quick Capture to log terminal commands, commits, or screenshots.
+              <div className="p-6 text-center text-xs text-[#64748B]">
+                No coding logs associated with this project yet. Use Quick Capture to record commits or work sessions.
               </div>
             ) : (
               projectActivities.map((act) => (
                 <div
                   key={act.id}
-                  className="rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] p-4 space-y-2 text-xs"
+                  className="rounded-md bg-[#0D1117] border border-[#1E293B] p-3 space-y-1.5 text-xs"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-display font-bold text-slate-900 dark:text-white">{act.title}</div>
-                      <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                      <div className="font-medium text-[#F0F6FC]">{act.title}</div>
+                      <div className="text-[10px] font-mono text-[#64748B] mt-0.5">
                         {act.startedAt.split('T')[0]} at {act.startedAt.split('T')[1]?.slice(0, 5)}
                       </div>
                     </div>
                     {act.githubCommit && (
-                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-lime text-slate-950 font-bold">
+                      <span className="font-mono text-[9px] px-2 py-0.5 rounded bg-[#161F2E] text-[#388BFD] border border-[#232E3E]">
                         {act.githubCommit}
                       </span>
                     )}
                   </div>
-                  {act.description && <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-sans">{act.description}</p>}
+                  {act.description && <p className="text-[#8B949E] leading-relaxed">{act.description}</p>}
                 </div>
               ))
             )}
@@ -282,30 +279,30 @@ export default function ProjectsPage() {
       {/* Add Project Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-[#090D12]/80 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bento-card max-w-lg w-full p-6 space-y-4 bg-white dark:bg-[#131A29]"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="workspace-panel max-w-lg w-full p-5 space-y-4 bg-[#111827] border border-[#1E293B]"
             >
               <form onSubmit={handleCreateProject}>
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-                  <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+                  <h3 className="text-xs font-semibold text-[#F0F6FC] uppercase tracking-wider">
                     Create Project Hub
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
+                    className="text-[#64748B] hover:text-[#F0F6FC]"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-3.5 pt-3">
+                <div className="space-y-3 pt-3">
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
                       Project Name *
                     </label>
                     <input
@@ -314,26 +311,26 @@ export default function ProjectsPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. RegreT Personal Life OS"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
                       Description
                     </label>
                     <textarea
                       rows={2}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Project architectural goals, problems solved, and scope..."
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime resize-none"
+                      placeholder="Project goals, scope, and architecture..."
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md p-2.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD] resize-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
                         GitHub Repo
                       </label>
                       <input
@@ -341,11 +338,11 @@ export default function ProjectsPage() {
                         value={githubRepo}
                         onChange={(e) => setGithubRepo(e.target.value)}
                         placeholder="user/repository"
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-xs font-medium text-[#8B949E] mb-1">
                         Vercel URL
                       </label>
                       <input
@@ -353,13 +350,13 @@ export default function ProjectsPage() {
                         value={vercelUrl}
                         onChange={(e) => setVercelUrl(e.target.value)}
                         placeholder="https://app.vercel.app"
-                        className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                        className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
                       Tech Stack (Comma separated)
                     </label>
                     <input
@@ -367,12 +364,12 @@ export default function ProjectsPage() {
                       value={techStack}
                       onChange={(e) => setTechStack(e.target.value)}
                       placeholder="Next.js, TypeScript, PostgreSQL, Tailwind CSS"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block text-xs font-medium text-[#8B949E] mb-1">
                       Screenshot Image URL (Optional)
                     </label>
                     <input
@@ -380,20 +377,20 @@ export default function ProjectsPage() {
                       value={screenshotUrl}
                       onChange={(e) => setScreenshotUrl(e.target.value)}
                       placeholder="https://..."
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
+                      className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#1E293B] mt-4">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="btn-secondary text-xs py-2 px-4"
+                    className="btn-secondary text-xs py-1.5 px-3"
                   >
                     Close
                   </button>
-                  <button type="submit" className="btn-primary text-xs py-2 px-5">
+                  <button type="submit" className="btn-primary text-xs py-1.5 px-3">
                     Save Project
                   </button>
                 </div>

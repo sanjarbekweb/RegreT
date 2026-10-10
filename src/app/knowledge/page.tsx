@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain,
-  Plus,
   BookOpen,
-  Award,
-  Sparkles,
-  ChevronRight,
+  Plus,
   Layers,
-  FileText,
+  Award,
+  Search,
   CheckCircle,
   HelpCircle,
   Trash2,
   Upload,
+  X,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { KnowledgeDocument, Quiz, Flashcard } from '../../lib/types';
@@ -25,7 +25,8 @@ import FlashcardViewer from '../../components/FlashcardViewer';
 export default function KnowledgeVaultPage() {
   const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<KnowledgeDocument | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New Lesson State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -165,310 +166,288 @@ export default function KnowledgeVaultPage() {
     setActiveDeck(docCards);
   };
 
+  const filteredDocs = docs.filter((d) => {
+    if (searchQuery.trim().length === 0) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      d.title.toLowerCase().includes(q) ||
+      d.topic.toLowerCase().includes(q) ||
+      d.rawContent.toLowerCase().includes(q)
+    );
+  });
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#1E293B]">
         <div>
-          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Cognitive Repository & AI Tutor
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+            Obsidian Quiet Workspace
           </div>
-          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-2xl font-sans font-semibold tracking-tight text-[#F0F6FC] mt-0.5">
             Knowledge Vault
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl font-sans">
-            Ingest lectures, textbooks, business topics, and research papers. Generate AI quizzes and spaced repetition flashcards.
+          <p className="text-xs text-[#8B949E] mt-0.5">
+            Quiet, text-focused workspace for research notes, books, ideas, saved resources, and conceptual links.
           </p>
         </div>
         <button
           onClick={() => setShowNewModal(true)}
-          className="btn-primary text-xs py-2.5 px-5 self-start sm:self-auto gap-2"
+          className="btn-primary text-xs py-1.5 px-3 self-start sm:self-auto gap-1.5"
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Ingest New Lesson</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>New Research Note</span>
         </button>
       </div>
 
-      {/* Main Bento Layout: List of documents on left, Selected Document details on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Lesson Directory */}
+      {/* Main Obsidian Split Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left Column: Quiet File Explorer */}
         <div className="space-y-3">
-          <div className="text-xs font-display font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
-            Synthesized Lessons ({docs.length})
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vault notes..."
+              className="w-full bg-[#090D12] border border-[#1E293B] rounded-md pl-9 pr-3 py-1.5 text-xs text-[#F0F6FC] placeholder:text-[#64748B] focus:outline-none focus:border-[#388BFD]"
+            />
           </div>
 
-          <div className="space-y-2.5">
-            {docs.map((doc) => {
-              const isSelected = selectedDoc?.id === doc.id;
-              return (
-                <motion.div
-                  key={doc.id}
-                  whileHover={{ y: -2 }}
-                  onClick={() => setSelectedDoc(doc)}
-                  className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
-                    isSelected
-                      ? 'bg-lime/15 dark:bg-lime/10 border-lime text-slate-950 dark:text-white shadow-sm ring-1 ring-lime/40'
-                      : 'bg-white dark:bg-[#131A29] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.12] shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200">
-                      {doc.topic}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {doc.createdAt.split('T')[0]}
-                    </span>
+          <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
+            {filteredDocs.length === 0 ? (
+              <div className="p-4 text-xs text-[#64748B] text-center">
+                No notes found.
+              </div>
+            ) : (
+              filteredDocs.map((doc) => {
+                const isSelected = selectedDoc?.id === doc.id;
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => setSelectedDoc(doc)}
+                    className={`p-3 cursor-pointer transition-colors text-left ${
+                      isSelected
+                        ? 'bg-[#161F2E] border-l-2 border-[#388BFD]'
+                        : 'hover:bg-[#161F2E]/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B]">
+                      <span className="uppercase text-[#8B949E]">{doc.topic}</span>
+                      <span>{doc.createdAt.split('T')[0]}</span>
+                    </div>
+                    <div className="text-xs font-medium text-[#F0F6FC] mt-1 line-clamp-1">
+                      {doc.title}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-[#64748B]">
+                      <span>{doc.quizzes.length} Quizzes</span>
+                      <span>·</span>
+                      <span>{doc.flashcardIds.length} Flashcards</span>
+                    </div>
                   </div>
-                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-2 line-clamp-1">
-                    {doc.title}
-                  </h4>
-                  <div className="flex items-center gap-3 mt-2.5 text-[11px] font-display text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      {doc.quizzes.length} Quizzes
-                    </span>
-                    <span className="flex items-center gap-1 font-semibold text-iris">
-                      <Layers className="w-3.5 h-3.5" />
-                      {doc.flashcardIds.length} Cards
-                    </span>
-                  </div>
-                </motion.div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* Right Column (2 cols): Selected Lesson In-Depth Viewer */}
+        {/* Right 2 Columns: Quiet Obsidian Reading & Workspace Pane */}
         <div className="lg:col-span-2 space-y-4">
           {selectedDoc ? (
-            <div className="bento-card p-6 md:p-7 space-y-5 bg-white dark:bg-[#131A29]">
-              {/* Document Header & Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+            <div className="workspace-panel p-6 space-y-5 bg-[#111827] border border-[#1E293B]">
+              {/* Document Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-[#1E293B]">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-display font-bold px-2.5 py-0.5 rounded-full bg-lime text-slate-950">
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-[#161F2E] text-[#388BFD] border border-[#232E3E]">
                       {selectedDoc.topic}
                     </span>
-                    <span className="text-xs font-mono text-slate-400">
+                    <span className="text-[11px] font-mono text-[#64748B]">
                       Source: {selectedDoc.sourceType}
                     </span>
+                    <span className="text-[11px] font-mono text-[#64748B]">
+                      {selectedDoc.createdAt.split('T')[0]}
+                    </span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-display font-extrabold text-slate-900 dark:text-white mt-2">
+                  <h2 className="text-xl font-sans font-semibold text-[#F0F6FC] mt-1.5 tracking-tight">
                     {selectedDoc.title}
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => handleLaunchDeck(selectedDoc)}
-                    className="btn-secondary text-xs py-2 px-4 gap-1.5"
+                    className="btn-secondary text-xs py-1.5 px-2.5 gap-1.5"
+                    title="Practice active flashcards"
                   >
-                    <Layers className="w-3.5 h-3.5 text-iris" />
-                    <span>Practice Cards</span>
+                    <Layers className="w-3.5 h-3.5 text-[#388BFD]" />
+                    <span>Flashcards ({selectedDoc.flashcardIds.length})</span>
                   </button>
                   {selectedDoc.quizzes.length > 0 && (
                     <button
                       onClick={() => setActiveQuiz(selectedDoc.quizzes[0])}
-                      className="btn-primary text-xs py-2 px-4 gap-1.5"
+                      className="btn-primary text-xs py-1.5 px-2.5 gap-1.5"
+                      title="Launch AI quiz"
                     >
                       <Award className="w-3.5 h-3.5" />
-                      <span>Take AI Quiz</span>
+                      <span>Take Quiz</span>
                     </button>
                   )}
                   <button
                     onClick={(e) => handleDeleteDoc(selectedDoc.id, e)}
-                    className="p-2 rounded-full text-slate-400 hover:text-coral hover:bg-coral/10 transition-colors"
-                    title="Delete Lesson Document"
+                    className="p-1.5 text-[#64748B] hover:text-[#F85149] rounded transition-colors"
+                    title="Delete Note"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              {/* AI Summary Box (Soft Lilac Bento Inset) */}
+              {/* Obsidian-Style Quiet Callout: AI Summary */}
               {selectedDoc.aiSummary && (
-                <div className="rounded-2xl p-4 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-800/30 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-display font-bold text-iris">
-                    <Sparkles className="w-4 h-4 text-iris" />
-                    <span>AI Executive Summary</span>
+                <div className="p-3.5 rounded-md bg-[#0D1117] border-l-2 border-[#388BFD] text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-[#388BFD] font-mono text-[10px] uppercase">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Executive Synthesis</span>
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-purple-200 leading-relaxed font-sans">
+                  <p className="text-[#8B949E] leading-relaxed">
                     {selectedDoc.aiSummary}
                   </p>
                 </div>
               )}
 
-              {/* Key Takeaways (Soft Mint Inset) */}
+              {/* Key Conceptual Takeaways */}
               {selectedDoc.keyTakeaways && selectedDoc.keyTakeaways.length > 0 && (
-                <div className="space-y-2.5">
-                  <div className="text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Key Conceptual Takeaways
+                <div className="space-y-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+                    Key Concepts & Links
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="space-y-1.5">
                     {selectedDoc.keyTakeaways.map((point, idx) => (
                       <li
                         key={idx}
-                        className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/30"
+                        className="text-xs text-[#F0F6FC] flex items-start gap-2 p-2 rounded bg-[#0D1117] border border-[#1E293B]"
                       >
-                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-mint shrink-0 mt-0.5" />
-                        <span className="font-sans leading-relaxed">{point}</span>
+                        <CheckCircle className="w-3.5 h-3.5 text-[#238636] shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{point}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {/* Attached Quizzes */}
-              <div className="space-y-3 pt-2">
-                <div className="text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Synthesized Assessment Modules
+              {/* Quiet Text-focused Document Content */}
+              <div className="space-y-2 pt-2 border-t border-[#1E293B]">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+                  Research Notes (Markdown Text)
                 </div>
-                {selectedDoc.quizzes.map((q) => (
-                  <div
-                    key={q.id}
-                    className="rounded-2xl p-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-xs font-display font-bold text-slate-900 dark:text-white">
-                        {q.title}
-                      </div>
-                      <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-                        {q.questions.length} questions
-                        {q.highestScore !== undefined ? ` · High Score: ${q.highestScore}%` : ''}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setActiveQuiz(q)}
-                      className="btn-iris text-xs py-1.5 px-4"
-                    >
-                      Start Quiz
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Original Raw Material Accordion */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
-                <div className="text-xs font-display font-bold text-slate-400 uppercase tracking-wider">
-                  Raw Ingested Text / Notes
-                </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06] p-4 max-h-48 overflow-y-auto text-xs text-slate-600 dark:text-slate-400 font-mono whitespace-pre-wrap leading-relaxed">
+                <div className="p-4 rounded-md bg-[#090D12] border border-[#1E293B] text-xs text-[#F0F6FC] font-sans leading-relaxed whitespace-pre-wrap selection:bg-[#388BFD]/30">
                   {selectedDoc.rawContent}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bento-card p-12 text-center text-slate-400 text-xs bg-white dark:bg-[#131A29]">
-              Select a lesson from the directory or create a new lesson to begin AI extraction.
+            <div className="workspace-panel p-12 text-center bg-[#111827] border border-[#1E293B] text-xs text-[#64748B]">
+              Select a note from the file explorer or create a new research note.
             </div>
           )}
         </div>
       </div>
 
-      {/* Ingest New Lesson Modal */}
+      {/* New Research Note Modal */}
       <AnimatePresence>
         {showNewModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-[#090D12]/80 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bento-card max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-[#131A29]"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="workspace-panel max-w-lg w-full p-5 space-y-4 bg-[#111827] border border-[#1E293B]"
             >
-              <form onSubmit={handleCreateDocument}>
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-                  <div>
-                    <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
-                      Ingest Knowledge & Lessons
-                    </h3>
-                    <div className="text-[11px] text-slate-400">
-                      AI will analyze notes, generate summaries, questions, and flashcards.
-                    </div>
+              <div className="flex items-center justify-between pb-3 border-b border-[#1E293B]">
+                <h3 className="text-xs font-semibold text-[#F0F6FC] uppercase tracking-wider">
+                  Ingest Research Note to Vault
+                </h3>
+                <button
+                  onClick={() => setShowNewModal(false)}
+                  className="text-[#64748B] hover:text-[#F0F6FC]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateDocument} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                    Note Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="e.g. Distributed Systems & Raft Consensus"
+                    className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#8B949E] mb-1">
+                    Domain / Topic
+                  </label>
+                  <input
+                    type="text"
+                    value={newTopic}
+                    onChange={(e) => setNewTopic(e.target.value)}
+                    placeholder="e.g. Computer Science, Business Strategy, Economics"
+                    className="w-full bg-[#090D12] border border-[#1E293B] rounded-md px-3 py-1.5 text-xs text-[#F0F6FC] focus:outline-none focus:border-[#388BFD]"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-[#8B949E]">
+                      Raw Research Text / Lecture Notes
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[10px] font-mono text-[#388BFD] hover:underline flex items-center gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload text file</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".txt,.md,.json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
                   </div>
+                  <textarea
+                    rows={6}
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    placeholder="Paste notes, lecture transcripts, book summaries, or paper notes here..."
+                    className="w-full bg-[#090D12] border border-[#1E293B] rounded-md p-3 text-xs text-[#F0F6FC] font-sans leading-relaxed focus:outline-none focus:border-[#388BFD]"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setShowNewModal(false)}
-                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
+                    className="btn-secondary text-xs py-1.5 px-3"
                   >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-3.5 pt-3">
-                  <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Lesson Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      placeholder="e.g. Modern Business Strategy & Competitive Moats"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-display font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Topic / Discipline
-                    </label>
-                    <input
-                      type="text"
-                      value={newTopic}
-                      onChange={(e) => setNewTopic(e.target.value)}
-                      placeholder="e.g. Business, Computer Science, Economics, Biology"
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
-                        Lesson Notes / Ingested Content *
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="btn-secondary text-[11px] py-1 px-3 flex items-center gap-1.5"
-                      >
-                        <Upload className="w-3 h-3 text-iris" />
-                        <span>Upload File</span>
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".txt,.md,.json,.csv,.pdf,text/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </div>
-                    <textarea
-                      required
-                      rows={8}
-                      value={newContent}
-                      onChange={(e) => setNewContent(e.target.value)}
-                      placeholder="Upload study file or paste lecture transcript, business case notes, textbook excerpts..."
-                      className="w-full bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-lime font-mono leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06] mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowNewModal(false)}
-                    className="btn-secondary text-xs py-2 px-4"
-                  >
-                    Close
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isGenerating}
-                    className="btn-primary text-xs py-2 px-5 flex items-center gap-2"
+                    className="btn-primary text-xs py-1.5 px-3"
                   >
-                    <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>{isGenerating ? 'Synthesizing with AI...' : 'Generate Learning Pipeline'}</span>
+                    {isGenerating ? 'Synthesizing...' : 'Save & Synthesize'}
                   </button>
                 </div>
               </form>
@@ -479,26 +458,19 @@ export default function KnowledgeVaultPage() {
 
       {/* Quiz Modal */}
       {activeQuiz && (
-        <QuizModal
-          quiz={activeQuiz}
-          onClose={() => {
-            setActiveQuiz(null);
-            loadDocs();
-          }}
+        <QuizModal quiz={activeQuiz} onClose={() => setActiveQuiz(null)} />
+      )}
+
+      {/* Flashcard Viewer */}
+      {activeDeck && (
+        <FlashcardViewer
+          cards={activeDeck}
+          onClose={() => setActiveDeck(null)}
           onComplete={() => {
+            setActiveDeck(null);
             loadDocs();
           }}
         />
-      )}
-
-      {/* Flashcard Viewer Modal */}
-      {activeDeck && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4">
-          <FlashcardViewer
-            flashcards={activeDeck}
-            onClose={() => setActiveDeck(null)}
-          />
-        </div>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import {
   Activity,
+  Attachment,
   Category,
   Countdown,
   Flashcard,
@@ -735,6 +736,44 @@ export function generatePastActivities(): Activity[] {
     'entertainment',
   ];
 
+  const SAMPLE_PHOTOS: Record<string, { url: string; caption: string; name: string }> = {
+    coding: {
+      url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
+      caption: 'TypeScript and system architecture sprint',
+      name: 'code_ide.png',
+    },
+    reading: {
+      url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+      caption: 'Annotating research chapter on deliberate practice',
+      name: 'book_annotations.jpg',
+    },
+    health: {
+      url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+      caption: 'Deadlift and compound strength session completed',
+      name: 'gym_session.jpg',
+    },
+    wakeup: {
+      url: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=800&q=80',
+      caption: 'Early morning wake-up check and ambient dawn light',
+      name: 'morning_dawn.jpg',
+    },
+    education: {
+      url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+      caption: 'Case analysis notes and lecture review',
+      name: 'lecture_review.jpg',
+    },
+    personal: {
+      url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80',
+      caption: 'Private digital workspace setup and review',
+      name: 'desk_workspace.jpg',
+    },
+    entertainment: {
+      url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80',
+      caption: 'F1 telemetry session and corner speed traces',
+      name: 'f1_telemetry.jpg',
+    },
+  };
+
   for (let i = 1; i <= 60; i++) {
     const d = new Date(todayUtc);
     d.setUTCDate(todayUtc.getUTCDate() - i);
@@ -747,6 +786,20 @@ export function generatePastActivities(): Activity[] {
       const started = `${dateStr}T${hour < 10 ? '0' + hour : hour}:00:00Z`;
       const ended = `${dateStr}T${hour + 1 < 10 ? '0' + (hour + 1) : hour + 1}:15:00Z`;
 
+      const attachments: Attachment[] = [];
+      if (i <= 12 && k === 0 && SAMPLE_PHOTOS[cat]) {
+        const p = SAMPLE_PHOTOS[cat];
+        attachments.push({
+          id: `att-hist-${i}-${k}`,
+          url: p.url,
+          caption: p.caption,
+          originalName: p.name,
+          mimeType: 'image/jpeg',
+          sizeBytes: 340000,
+          createdAt: started,
+        });
+      }
+
       past.push({
         id: `hist-${i}-${k}`,
         title: `${cat.charAt(0).toUpperCase() + cat.slice(1)} Session - Day -${i}`,
@@ -755,7 +808,7 @@ export function generatePastActivities(): Activity[] {
         startedAt: started,
         endedAt: ended,
         tags: [cat, 'archive'],
-        attachments: [],
+        attachments,
         source: 'manual',
         createdAt: started,
         updatedAt: started,

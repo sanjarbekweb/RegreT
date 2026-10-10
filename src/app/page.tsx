@@ -1,30 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   BookOpen,
   FolderGit2,
   Hourglass,
-  CheckCircle2,
-  Circle,
   Plus,
   ArrowRight,
-  Sparkles,
   ExternalLink,
   ChevronRight,
   Activity as ActivityIcon,
   Flame,
   Check,
-  Zap,
+  X,
+  Image as ImageIcon,
+  Quote,
 } from 'lucide-react';
 import ContributionHeatmap from '../components/ContributionHeatmap';
 import AnimatedCounter from '../components/AnimatedCounter';
-import GsapReveal from '../components/GsapReveal';
 import { storage } from '../lib/storage';
-import { Activity, Habit, HabitCompletion, Countdown, KnowledgeDocument } from '../lib/types';
+import { Activity, Habit, HabitCompletion, Countdown, KnowledgeDocument, Attachment } from '../lib/types';
 
 export default function DashboardOverview() {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -33,6 +31,7 @@ export default function DashboardOverview() {
   const [countdowns, setCountdowns] = useState<Countdown[]>([]);
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
   const [todayStr, setTodayStr] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const loadData = () => {
     setActivities(storage.getActivities());
@@ -50,8 +49,47 @@ export default function DashboardOverview() {
     return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
 
-  // Today's activities
-  const todayActivities = activities.filter((a) => a.startedAt.startsWith(todayStr));
+  // Today's activities sorted chronologically descending
+  const todayActivities = useMemo(() => {
+    return activities
+      .filter((a) => a.startedAt.startsWith(todayStr))
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  }, [activities, todayStr]);
+
+  // Recent activities (last 7 recorded if today is sparse)
+  const recentActivities = useMemo(() => {
+    return [...activities]
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+      .slice(0, 8);
+  }, [activities]);
+
+  // Calculate total focus time today
+  const todayTotalDurationMinutes = useMemo(() => {
+    let totalMin = 0;
+    todayActivities.forEach((act) => {
+      if (act.endedAt) {
+        const diff = (new Date(act.endedAt).getTime() - new Date(act.startedAt).getTime()) / (1000 * 60);
+        if (diff > 0) totalMin += diff;
+      } else {
+        totalMin += 30; // default estimated duration if ongoing/point in time
+      }
+    });
+    return Math.round(totalMin);
+  }, [todayActivities]);
+
+  const formatDuration = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
+
+  const calculateActivityDuration = (act: Activity) => {
+    if (!act.endedAt) return '30m';
+    const diff = (new Date(act.endedAt).getTime() - new Date(act.startedAt).getTime()) / (1000 * 60);
+    return formatDuration(Math.max(1, Math.round(diff)));
+  };
 
   // Toggle habit completion
   const handleToggleHabit = (habitId: string) => {
@@ -78,200 +116,254 @@ export default function DashboardOverview() {
   };
 
   const completedHabitsCount = habits.filter((h) => isHabitCompletedToday(h.id)).length;
-  const habitCompletionRate = habits.length > 0 ? Math.round((completedHabitsCount / habits.length) * 100) : 0;
+
+  const formattedToday = new Date(todayStr + 'T00:00:00Z').toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  });
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Top Hero Banner & Greeting (Image 1 & 2 Style) */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 pb-2 border-b border-slate-200/80 dark:border-white/[0.08]"
-      >
+    <div className="space-y-6">
+      {/* Top Header: Concept preview match from prompt */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1E293B]">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime/20 text-slate-900 dark:text-lime text-xs font-display font-bold uppercase tracking-wider mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-950 dark:bg-lime" />
-            Personal Life Operating System
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-[#8B949E]">
+            <span className="text-[#388BFD] font-semibold">Personal OS</span>
+            <span className="text-[#484F58]">·</span>
+            <span>Private life archive</span>
+            <span className="text-[#484F58]">·</span>
+            <span>Dark workspace</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-slate-900 dark:text-white">
-            Your life, recorded.
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl font-sans">
-            Every habit, lesson, project, and milestone organized in a permanent unified record with zero data leakage.
+
+          <div className="mt-1 flex items-baseline gap-3">
+            <h1 className="text-2xl sm:text-3xl font-sans font-semibold tracking-tight text-[#F0F6FC]">
+              {formattedToday}
+            </h1>
+          </div>
+
+          <p className="text-xs text-[#8B949E] mt-1">
+            {todayActivities.length} {todayActivities.length === 1 ? 'activity' : 'activities'} recorded today
+            {todayTotalDurationMinutes > 0 && ` · ${formatDuration(todayTotalDurationMinutes)} total time`}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link href="/capture" className="btn-primary text-xs py-2.5 px-5">
-            <Plus className="w-4 h-4 stroke-[3]" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('regret_open_quick_capture', { detail: {} }));
+              }
+            }}
+            className="btn-primary text-xs py-1.5 px-3 gap-1.5"
+            title="Record what happened (N)"
+          >
+            <Plus className="w-3.5 h-3.5" />
             <span>Quick Capture</span>
-          </Link>
-          <Link href="/timeline" className="btn-secondary text-xs py-2.5 px-5">
-            <span>Open Timeline</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <kbd className="hidden sm:inline text-[9px] font-mono opacity-60">N</kbd>
+          </button>
+          <Link href="/timeline" className="btn-secondary text-xs py-1.5 px-3">
+            <span>Life Timeline</span>
+            <ArrowRight className="w-3 h-3 text-[#8B949E]" />
           </Link>
         </div>
-      </motion.div>
-
-      {/* 4 Core Pillars Bento Metric Cards (Image 1 & 2 & 4 Bento Style) */}
-      <GsapReveal className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" stagger={0.08} duration={0.6}>
-        {/* Metric 1 - Soft Lavender Tint */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-[26px] p-5 bg-[#F4EFFF] dark:bg-[#201738] border border-[#E9D5FF] dark:border-purple-800/40 shadow-sm flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between text-purple-900 dark:text-purple-300">
-            <span className="text-xs font-display font-bold uppercase tracking-wider">First Activity</span>
-            <div className="w-8 h-8 rounded-full bg-purple-200/60 dark:bg-purple-800/40 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-purple-700 dark:text-purple-300" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl sm:text-4xl font-display font-black text-purple-950 dark:text-purple-100">
-              {todayActivities.length > 0
-                ? todayActivities[todayActivities.length - 1]?.startedAt.split('T')[1]?.slice(0, 5)
-                : '06:15'}
-            </div>
-            <div className="text-xs font-medium text-purple-800/80 dark:text-purple-400 mt-1">
-              {todayActivities.length} sessions logged today
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Metric 2 - Soft Mint Tint */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-[26px] p-5 bg-[#EAFBF3] dark:bg-[#0E281F] border border-[#BBF7D0] dark:border-emerald-800/40 shadow-sm flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between text-emerald-900 dark:text-emerald-300">
-            <span className="text-xs font-display font-bold uppercase tracking-wider">Knowledge Vault</span>
-            <div className="w-8 h-8 rounded-full bg-emerald-200/60 dark:bg-emerald-800/40 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl sm:text-4xl font-display font-black text-emerald-950 dark:text-emerald-100">
-              <AnimatedCounter value={knowledgeDocs.length} suffix=" Lessons" />
-            </div>
-            <div className="text-xs font-medium text-emerald-800/80 dark:text-emerald-400 mt-1">
-              AI quizzes & flashcards active
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Metric 3 - Soft Coral Tint */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-[26px] p-5 bg-[#FFF2ED] dark:bg-[#2C1914] border border-[#FED7AA] dark:border-orange-800/40 shadow-sm flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between text-orange-900 dark:text-orange-300">
-            <span className="text-xs font-display font-bold uppercase tracking-wider">Project Studio</span>
-            <div className="w-8 h-8 rounded-full bg-orange-200/60 dark:bg-orange-800/40 flex items-center justify-center">
-              <FolderGit2 className="w-4 h-4 text-orange-700 dark:text-orange-300" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl sm:text-4xl font-display font-black text-orange-950 dark:text-orange-100">
-              2 Repos
-            </div>
-            <div className="text-xs font-medium text-orange-800/80 dark:text-orange-400 mt-1">
-              GitHub & Vercel connected
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Metric 4 - Royal Iris Hero Card with Electric Lime Pill Button (Image 1 & 2 CTA Block) */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-[26px] p-5 bg-iris text-white shadow-[0_8px_24px_rgba(94,67,243,0.35)] flex flex-col justify-between relative overflow-hidden group"
-        >
-          {/* Subtle gradient pattern */}
-          <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none" />
-
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-display font-bold uppercase tracking-wider text-white/90">
-              Habits Engine
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-wide">
-              {habitCompletionRate}%
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-display font-black text-white">
-              {completedHabitsCount}/{habits.length} Done
-            </div>
-            <p className="text-[11px] text-white/80 mt-1 line-clamp-1">
-              Maintain your daily peak momentum.
-            </p>
-          </div>
-
-          <div className="mt-3 pt-2">
-            <Link
-              href="/calendar"
-              className="w-full bg-lime hover:bg-lime-hover text-slate-950 font-display font-bold text-xs py-2 px-3.5 rounded-full inline-flex items-center justify-center gap-1.5 shadow-md transition-all group-hover:scale-[1.02]"
-            >
-              <span>Track Today</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </motion.div>
-      </GsapReveal>
-
-      {/* GitHub-Style Contribution Heatmap Calendar */}
-      <div>
-        <ContributionHeatmap activities={activities} weeksToShow={16} />
       </div>
 
-      {/* Two Column Bento Grid: Routine Checklist & Recent Timeline Stream */}
-      <GsapReveal className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-7" delay={0.12}>
-        {/* Left Column: Habits & Countdowns */}
-        <div className="space-y-6">
-          {/* Habits Card */}
-          <div className="bento-card p-5 sm:p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
-              <div>
-                <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider">
-                  Today&apos;s Routine
-                </h3>
-                <div className="text-[11px] text-slate-400 font-mono">{todayStr}</div>
+      {/* Summary Metrics Row (Linear-style restrained panels) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="workspace-panel p-3.5 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Time Spent Today</span>
+            <Clock className="w-3.5 h-3.5 text-[#388BFD]" />
+          </div>
+          <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC] mt-1.5">
+            {formatDuration(todayTotalDurationMinutes)}
+          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">
+            {todayActivities.length} recorded blocks
+          </div>
+        </div>
+
+        <div className="workspace-panel p-3.5 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Habit Consistency</span>
+            <Check className="w-3.5 h-3.5 text-[#238636]" />
+          </div>
+          <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC] mt-1.5">
+            {completedHabitsCount}/{habits.length} Done
+          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">
+            {habits.length > 0 ? Math.round((completedHabitsCount / habits.length) * 100) : 0}% daily completion
+          </div>
+        </div>
+
+        <div className="workspace-panel p-3.5 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Knowledge Vault</span>
+            <BookOpen className="w-3.5 h-3.5 text-[#8B949E]" />
+          </div>
+          <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC] mt-1.5">
+            <AnimatedCounter value={knowledgeDocs.length} suffix=" Notes" />
+          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">
+            AI quizzes & flashcards active
+          </div>
+        </div>
+
+        <div className="workspace-panel p-3.5 bg-[#111827] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Projects Active</span>
+            <FolderGit2 className="w-3.5 h-3.5 text-[#8B949E]" />
+          </div>
+          <div className="text-xl sm:text-2xl font-mono font-semibold text-[#F0F6FC] mt-1.5">
+            2 Repos
+          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">
+            GitHub repo sync active
+          </div>
+        </div>
+      </div>
+
+      {/* GitHub-style Compact Contribution Heatmap */}
+      <div>
+        <ContributionHeatmap
+          activities={activities}
+          weeksToShow={16}
+          onSelectActivity={(act) => setSelectedActivity(act)}
+        />
+      </div>
+
+      {/* Main Content: What have I been doing? + Habits Checklist */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left 2 Cols: Chronological Activity Stream answering: What have I been doing? */}
+        <div className="lg:col-span-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#F0F6FC]">
+                {todayActivities.length > 0 ? "Today's Activities" : "Recent Activities"}
+              </span>
+              <span className="text-[10px] font-mono text-[#64748B]">
+                ({todayActivities.length > 0 ? todayActivities.length : recentActivities.length})
+              </span>
+            </div>
+            <Link href="/timeline" className="text-xs text-[#388BFD] hover:underline flex items-center gap-1">
+              <span>View full timeline</span>
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
+            {(todayActivities.length > 0 ? todayActivities : recentActivities).map((act) => {
+              const timeDisplay = act.startedAt.split('T')[1]?.slice(0, 5) || '12:00';
+              const duration = calculateActivityDuration(act);
+              const hasPhotos = act.attachments && act.attachments.length > 0;
+
+              return (
+                <div
+                  key={act.id}
+                  onClick={() => setSelectedActivity(act)}
+                  className="p-3.5 hover:bg-[#161F2E]/60 transition-colors cursor-pointer group flex items-start justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="pt-0.5 text-right shrink-0">
+                      <div className="text-xs font-mono font-medium text-[#F0F6FC]">
+                        {timeDisplay}
+                      </div>
+                      <div className="text-[10px] font-mono text-[#64748B]">
+                        {duration}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-[#F0F6FC] group-hover:text-[#388BFD] transition-colors truncate">
+                          {act.title}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-[#161F2E] text-[#8B949E] border border-[#1E293B] shrink-0">
+                          {act.categoryId}
+                        </span>
+                      </div>
+
+                      {act.description && (
+                        <p className="text-[11px] text-[#8B949E] mt-1 line-clamp-1">
+                          {act.description}
+                        </p>
+                      )}
+
+                      {/* Photo preview pill */}
+                      {hasPhotos && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          {act.attachments.slice(0, 2).map((att) => (
+                            <div
+                              key={att.id}
+                              className="w-10 h-10 rounded border border-[#1E293B] overflow-hidden bg-black shrink-0"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={att.url}
+                                alt={att.caption || 'Thumbnail'}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                          {act.attachments.length > 2 && (
+                            <span className="text-[10px] font-mono text-[#64748B]">
+                              +{act.attachments.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <ChevronRight className="w-4 h-4 text-[#484F58] group-hover:text-[#F0F6FC] shrink-0 self-center" />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Col: Routine Habits Checklist & Upcoming Deadlines */}
+        <div className="space-y-4">
+          {/* Habits Checklist */}
+          <div className="workspace-panel p-4 space-y-3 bg-[#111827] border border-[#1E293B]">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1E293B]">
+              <div className="text-xs font-semibold text-[#F0F6FC]">
+                Today&apos;s Routine
               </div>
-              <Link href="/calendar" className="text-xs text-iris font-display font-bold hover:underline">
-                All Habits
+              <Link href="/calendar" className="text-[11px] text-[#388BFD] hover:underline">
+                Manage
               </Link>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {habits.map((habit) => {
                 const done = isHabitCompletedToday(habit.id);
                 return (
                   <button
                     key={habit.id}
                     onClick={() => handleToggleHabit(habit.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition-all ${
+                    className={`w-full flex items-center justify-between p-2 rounded-md border text-left text-xs transition-colors ${
                       done
-                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-slate-900 dark:text-white'
-                        : 'bg-slate-50 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        ? 'bg-[#161F2E]/40 border-[#1E293B] text-[#8B949E]'
+                        : 'bg-[#0D1117] border-[#1E293B] text-[#F0F6FC] hover:border-[#334155]'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 ${
-                          done ? 'bg-mint text-slate-950' : 'border-2 border-slate-300 dark:border-slate-600'
+                        className={`w-4 h-4 rounded flex items-center justify-center transition-colors shrink-0 ${
+                          done
+                            ? 'bg-[#238636] text-white'
+                            : 'border border-[#334155]'
                         }`}
                       >
-                        {done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        {done && <Check className="w-3 h-3 stroke-[2.5]" />}
                       </div>
-                      <span className={`text-xs font-display font-bold ${done ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+                      <span className={`truncate ${done ? 'line-through text-[#64748B]' : ''}`}>
                         {habit.name}
                       </span>
                     </div>
-                    <span className="text-[10px] font-display font-semibold uppercase px-2 py-0.5 rounded-full bg-white dark:bg-white/[0.08] text-slate-500">
+                    <span className="text-[9px] font-mono text-[#64748B] uppercase shrink-0">
                       {habit.categoryId}
                     </span>
                   </button>
@@ -280,179 +372,156 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          {/* Upcoming Countdowns (Image 4 Virage.ai Style) */}
-          <div className="bento-card p-5 sm:p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
-              <div>
-                <h3 className="font-display font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider">
-                  Critical Deadlines
-                </h3>
-                <div className="text-[11px] text-slate-400">Milestones & timers</div>
+          {/* Upcoming Deadlines */}
+          <div className="workspace-panel p-4 space-y-3 bg-[#111827] border border-[#1E293B]">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1E293B]">
+              <div className="text-xs font-semibold text-[#F0F6FC]">
+                Critical Deadlines
               </div>
-              <Link href="/countdowns" className="text-xs text-iris font-display font-bold hover:underline">
-                View All
+              <Link href="/countdowns" className="text-[11px] text-[#388BFD] hover:underline">
+                View all
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {nextDeadlines.map((cd) => (
                 <div
                   key={cd.id}
-                  className="rounded-2xl p-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-1.5"
+                  className="p-2.5 rounded-md bg-[#0D1117] border border-[#1E293B] text-xs flex items-center justify-between"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-display font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
+                  <div className="min-w-0 pr-2">
+                    <div className="font-medium text-[#F0F6FC] truncate">
                       {cd.title}
-                    </span>
-                    <span className="shrink-0 font-display font-bold text-[10px] px-2.5 py-0.5 rounded-full bg-coral/15 text-coral-dark dark:text-coral border border-coral/30">
-                      {calculateDaysRemaining(cd.targetDate)}
-                    </span>
+                    </div>
+                    <div className="text-[10px] text-[#64748B] font-mono mt-0.5">
+                      {cd.targetDate.replace('T', ' ')}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                    {cd.description}
-                  </div>
+                  <span className="text-[10px] font-mono text-[#F85149] px-1.5 py-0.5 rounded bg-[#F85149]/10 border border-[#F85149]/20 shrink-0">
+                    {calculateDaysRemaining(cd.targetDate)}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Column: Real-time Timeline Stream */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bento-card p-5 sm:p-6 space-y-4 bg-white dark:bg-[#131A29]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
-              <div>
-                <h2 className="font-display font-extrabold text-base text-slate-900 dark:text-white">
-                  Timeline Stream
-                </h2>
-                <div className="text-xs text-slate-400 font-mono">Real-time chronologic life log</div>
+      {/* Complete Activity Record Modal (Prompt Specification) */}
+      <AnimatePresence>
+        {selectedActivity && (
+          <div className="fixed inset-0 z-50 bg-[#090D12]/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="workspace-panel max-w-lg w-full max-h-[85vh] overflow-y-auto p-5 space-y-4 bg-[#111827] border border-[#1E293B]"
+            >
+              <div className="flex items-start justify-between border-b border-[#1E293B] pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-[#161F2E] text-[#388BFD] border border-[#232E3E]">
+                      {selectedActivity.categoryId}
+                    </span>
+                    <span className="text-xs font-mono text-[#8B949E]">
+                      {selectedActivity.startedAt.replace('T', ' ').slice(0, 16)}
+                    </span>
+                  </div>
+                  <h2 className="text-base font-semibold text-[#F0F6FC] mt-1">
+                    {selectedActivity.title}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setSelectedActivity(null)}
+                  className="text-[#64748B] hover:text-[#F0F6FC] p-1 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <Link
-                href="/timeline"
-                className="text-xs text-iris font-display font-bold hover:underline flex items-center gap-1"
-              >
-                <span>Full Archive</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
 
-            <div className="space-y-3">
-              {todayActivities.length === 0 ? (
-                <div className="p-8 text-center rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/[0.08] text-slate-500 text-xs">
-                  <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p className="font-display font-bold text-slate-700 dark:text-slate-300">
-                    No activities logged for today yet.
-                  </p>
-                  <p className="mt-1">
-                    Use Quick Capture to record waking up, exercise, or study.
+              {selectedActivity.description && (
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider">
+                    Notes & Record
+                  </div>
+                  <p className="text-xs text-[#8B949E] leading-relaxed whitespace-pre-wrap">
+                    {selectedActivity.description}
                   </p>
                 </div>
-              ) : (
-                todayActivities.slice(0, 5).map((act) => (
-                  <motion.div
-                    key={act.id}
-                    whileHover={{ y: -2 }}
-                    className="rounded-2xl p-4 bg-slate-50/70 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.06] space-y-2.5 transition-all hover:border-slate-300 dark:hover:border-white/[0.12]"
-                  >
-                    {/* Activity Top Meta */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-display font-bold px-2.5 py-0.5 rounded-full bg-lime text-slate-950">
-                            {act.categoryId}
-                          </span>
-                          <span className="text-xs font-mono text-slate-400">
-                            {act.startedAt.split('T')[1]?.slice(0, 5)}
-                            {act.endedAt ? ` - ${act.endedAt.split('T')[1]?.slice(0, 5)}` : ''}
-                          </span>
-                        </div>
-                        <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1.5">
-                          {act.title}
-                        </h4>
-                      </div>
-
-                      {act.source === 'timer' && (
-                        <span className="text-[10px] font-display font-semibold px-2 py-0.5 rounded-full bg-iris/10 text-iris border border-iris/20">
-                          Timed
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    {act.description && (
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
-                        {act.description}
-                      </p>
-                    )}
-
-                    {/* Book Quote if any */}
-                    {act.bookQuote && (
-                      <div className="bg-purple-50 dark:bg-purple-950/20 border-l-4 border-iris p-3 rounded-r-xl text-xs space-y-1">
-                        <div className="italic text-purple-950 dark:text-purple-200 font-serif">
-                          &quot;{act.bookQuote.quote}&quot;
-                        </div>
-                        <div className="text-[11px] text-purple-700 dark:text-purple-400 font-sans font-medium">
-                          — {act.bookQuote.author}, {act.bookQuote.bookTitle} (p. {act.bookQuote.pageNumber})
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Photos / Attachments */}
-                    {act.attachments && act.attachments.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                        {act.attachments.map((att) => (
-                          <div
-                            key={att.id}
-                            className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08] bg-black group"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={att.url}
-                              alt={att.caption || 'Activity media'}
-                              className="w-full h-32 object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {att.caption && (
-                              <div className="absolute bottom-0 inset-x-0 bg-slate-950/80 px-2.5 py-1 text-[10px] text-white truncate">
-                                {att.caption}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Tags & Integrations */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      {act.githubRepo && (
-                        <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 flex items-center gap-1 bg-white dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-white/[0.08]">
-                          <FolderGit2 className="w-3 h-3 text-iris" />
-                          {act.githubRepo}
-                        </span>
-                      )}
-                      {act.vercelUrl && (
-                        <a
-                          href={act.vercelUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-mono text-iris flex items-center gap-1 bg-white dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-white/[0.08] hover:underline"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Vercel
-                        </a>
-                      )}
-                      {act.tags.map((t) => (
-                        <span key={t} className="text-[10px] font-mono text-slate-400">
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))
               )}
-            </div>
+
+              {/* Book quote if reading */}
+              {selectedActivity.bookQuote && (
+                <div className="p-3 rounded-md bg-[#0D1117] border border-[#1E293B] text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 text-[#388BFD]">
+                    <Quote className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-mono uppercase">Book Quotation</span>
+                  </div>
+                  <blockquote className="italic text-[#F0F6FC]">
+                    &quot;{selectedActivity.bookQuote.quote}&quot;
+                  </blockquote>
+                  <div className="text-[10px] text-[#64748B]">
+                    — {selectedActivity.bookQuote.author}, {selectedActivity.bookQuote.bookTitle}
+                  </div>
+                </div>
+              )}
+
+              {/* Photos Gallery */}
+              {selectedActivity.attachments && selectedActivity.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider">
+                    Attached Photos ({selectedActivity.attachments.length})
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedActivity.attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="rounded-md border border-[#1E293B] overflow-hidden bg-black space-y-1"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={att.url}
+                          alt={att.caption || 'Attachment'}
+                          className="w-full h-40 object-cover"
+                        />
+                        {att.caption && (
+                          <div className="px-2 py-1 text-[10px] text-[#8B949E] bg-[#0D1117] border-t border-[#1E293B]">
+                            {att.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {selectedActivity.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-2 border-t border-[#1E293B]">
+                  {selectedActivity.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="text-[10px] font-mono text-[#64748B] bg-[#0D1117] px-2 py-0.5 rounded border border-[#1E293B]"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setSelectedActivity(null)}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                >
+                  Close Record
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      </GsapReveal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

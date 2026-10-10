@@ -4,20 +4,38 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, CategoryId } from '../lib/types';
 import { INITIAL_CATEGORIES } from '../lib/storage';
-import { calculateStreaks } from '../lib/analytics';
+import {
+  calculateStreaks,
+  getIntensityClass,
+  classifyDay,
+  getArchiveStartDate,
+  DayStatusInfo,
+} from '../lib/analytics';
 import AnimatedCounter from './AnimatedCounter';
-import { Flame, Trophy, CalendarCheck2, Activity as ActivityIcon } from 'lucide-react';
+import {
+  Flame,
+  Trophy,
+  CalendarCheck2,
+  Activity as ActivityIcon,
+  Clock,
+  ChevronRight,
+  Plus,
+} from 'lucide-react';
 
 interface ContributionHeatmapProps {
   activities: Activity[];
   weeksToShow?: number;
   onSelectDate?: (dateStr: string, dayActivities: Activity[]) => void;
+  onSelectActivity?: (activity: Activity) => void;
+  showDayDetails?: boolean;
 }
 
 export default function ContributionHeatmap({
   activities,
   weeksToShow = 16,
   onSelectDate,
+  onSelectActivity,
+  showDayDetails = true,
 }: ContributionHeatmapProps) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | 'all'>('all');
   const [activeDate, setActiveDate] = useState<string | null>(null);
@@ -27,6 +45,10 @@ export default function ContributionHeatmap({
     if (selectedCategory === 'all') return activities;
     return activities.filter((a) => a.categoryId === selectedCategory);
   }, [activities, selectedCategory]);
+
+  const archiveStartDate = useMemo(() => {
+    return getArchiveStartDate(activities);
+  }, [activities]);
 
   // Aggregate counts by YYYY-MM-DD
   const dateMap = useMemo(() => {
@@ -41,7 +63,7 @@ export default function ContributionHeatmap({
   }, [filteredActivities]);
 
   // Generate grid of weeks ending with the current week (aligned to Monday)
-  const { grid, stats } = useMemo(() => {
+  const { grid, monthLabels, stats } = useMemo(() => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const todayUtc = new Date(todayStr + 'T00:00:00Z');
@@ -64,7 +86,11 @@ export default function ContributionHeatmap({
       activities: Activity[];
       isFuture: boolean;
       isToday: boolean;
+      statusInfo: DayStatusInfo;
     }[][] = [];
+
+    const monthHeaders: { label: string; colIndex: number }[] = [];
+    let lastMonth = -1;
 
     const pastAndTodayDays: { dateStr: string; count: number }[] = [];
 
@@ -76,7 +102,19 @@ export default function ContributionHeatmap({
         activities: Activity[];
         isFuture: boolean;
         isToday: boolean;
+        statusInfo: DayStatusInfo;
       }[] = [];
+
+      const weekMondayDate = new Date(gridStartMonday);
+      weekMondayDate.setUTCDate(gridStartMonday.getUTCDate() + w * 7);
+      const m = weekMondayDate.getUTCMonth();
+      if (m !== lastMonth) {
+        monthHeaders.push({
+          label: weekMondayDate.toLocaleDateString('en-US', { month: 'short' }),
+          colIndex: w,
+        });
+        lastMonth = m;
+      }
 
       for (let d = 0; d < 7; d++) {
         const dayDate = new Date(gridStartMonday);
@@ -87,6 +125,8 @@ export default function ContributionHeatmap({
         const isFuture = dateStr > todayStr;
         const dayActs = isFuture ? [] : (dateMap.get(dateStr) || []);
 
+        const statusInfo = classifyDay(dateStr, dayActs.length, todayStr, archiveStartDate);
+
         const dayItem = {
           date: dayDate,
           dateStr,
@@ -94,6 +134,7 @@ export default function ContributionHeatmap({
           activities: dayActs,
           isFuture,
           isToday,
+          statusInfo,
         };
 
         weekDays.push(dayItem);
@@ -108,48 +149,59 @@ export default function ContributionHeatmap({
 
     return {
       grid: weeks,
+      monthLabels: monthHeaders,
       stats: {
         ...streakStats,
         totalLogged: filteredActivities.length,
       },
     };
-  }, [weeksToShow, dateMap, filteredActivities]);
+  }, [weeksToShow, dateMap, filteredActivities, archiveStartDate]);
 
-  const getColorClass = (count: number) => {
-    if (count === 0) return 'bg-slate-100 dark:bg-white/[0.05] border-slate-200/50 dark:border-white/[0.05]';
-    if (count === 1) return 'bg-[#E4FBB5] border-[#D4F655]/60';
-    if (count === 2) return 'bg-[#D4F655] border-[#C2E638]';
-    if (count === 3) return 'bg-[#A3E635] border-[#84CC16]';
-    return 'bg-[#5E43F3] border-[#4D32E5] text-white';
-  };
+  // Single-color intensity scale (Monochromatic blue scale matching Linear/GitHub)
+  const getColorClass = (count: number) => getIntensityClass(count);
 
   const dayLabels = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
   const selectedDayActivities = activeDate ? dateMap.get(activeDate) || [] : [];
+  const selectedDayStatus = useMemo(() => {
+    if (!activeDate) return null;
+    const today = new Date().toISOString().split('T')[0];
+    return classifyDay(activeDate, selectedDayActivities.length, today, archiveStartDate);
+  }, [activeDate, selectedDayActivities.length, archiveStartDate]);
+
+  const handleOpenCaptureForDate = (dateToPrefill: string) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('regret_open_quick_capture', {
+          detail: { dateStr: dateToPrefill },
+        })
+      );
+    }
+  };
 
   return (
-    <div className="bento-card p-6 md:p-7 space-y-5 bg-white dark:bg-[#131A29]">
-      {/* Top Header & Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+    <div className="workspace-panel p-5 space-y-5 bg-[#111827] border border-[#1E293B]">
+      {/* Top Header & Category Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1E293B]">
         <div>
-          <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Consistency Engine
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+            Consistency Matrix
           </div>
-          <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-0.5">
-            Activity & Habit Consistency
+          <h3 className="font-sans font-semibold text-sm text-[#F0F6FC] mt-0.5">
+            Activity History & Consistency
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {weeksToShow} weeks continuous contribution matrix
+          <p className="text-xs text-[#8B949E]">
+            {weeksToShow} weeks continuous record · Monochromatic single-color scale
           </p>
         </div>
 
         {/* Category Pills Filter */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-display font-bold transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
               selectedCategory === 'all'
-                ? 'bg-lime text-slate-950 shadow-[0_2px_8px_rgba(212,246,85,0.4)] border border-black/5'
-                : 'bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-[#161F2E] text-[#F0F6FC] border border-[#388BFD]/40'
+                : 'text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#161F2E]/60 border border-transparent'
             }`}
           >
             All Tracks
@@ -158,10 +210,10 @@ export default function ContributionHeatmap({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-display font-bold transition-all shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
                 selectedCategory === cat.id
-                  ? 'bg-lime text-slate-950 shadow-[0_2px_8px_rgba(212,246,85,0.4)] border border-black/5'
-                  : 'bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[#161F2E] text-[#F0F6FC] border border-[#388BFD]/40'
+                  : 'text-[#8B949E] hover:text-[#F0F6FC] hover:bg-[#161F2E]/60 border border-transparent'
               }`}
             >
               {cat.name}
@@ -170,104 +222,119 @@ export default function ContributionHeatmap({
         </div>
       </div>
 
-      {/* Stats Bento Quick Cards (Tinted pastel squircle cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Current Streak - Mint Tint */}
-        <div className="rounded-2xl p-4 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/30">
-          <div className="flex items-center justify-between text-emerald-800 dark:text-emerald-400">
-            <span className="text-[11px] font-display font-bold uppercase tracking-wider">Current Streak</span>
-            <Flame className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+      {/* Restrained Linear-Style Metrics Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-md p-3 bg-[#0D1117] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Current Streak</span>
+            <Flame className="w-3.5 h-3.5 text-[#388BFD]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-display font-black text-emerald-950 dark:text-emerald-100 mt-2">
+          <div className="text-xl font-mono font-semibold text-[#F0F6FC] mt-1">
             <AnimatedCounter value={stats.currentStreak} suffix=" Days" />
           </div>
-          <div className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-1 font-medium">
-            Active daily cadence
-          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">Active daily cadence</div>
         </div>
 
-        {/* Longest Streak - Coral Tint */}
-        <div className="rounded-2xl p-4 bg-orange-50/70 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-800/30">
-          <div className="flex items-center justify-between text-orange-800 dark:text-orange-400">
-            <span className="text-[11px] font-display font-bold uppercase tracking-wider">Longest Streak</span>
-            <Trophy className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+        <div className="rounded-md p-3 bg-[#0D1117] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Longest Streak</span>
+            <Trophy className="w-3.5 h-3.5 text-[#8B949E]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-display font-black text-orange-950 dark:text-orange-100 mt-2">
+          <div className="text-xl font-mono font-semibold text-[#F0F6FC] mt-1">
             <AnimatedCounter value={stats.longestStreak} suffix=" Days" />
           </div>
-          <div className="text-[11px] text-orange-700/80 dark:text-orange-400/80 mt-1 font-medium">
-            Personal all-time record
-          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">Personal record</div>
         </div>
 
-        {/* Active Days - Lilac Tint */}
-        <div className="rounded-2xl p-4 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-800/30">
-          <div className="flex items-center justify-between text-purple-800 dark:text-purple-400">
-            <span className="text-[11px] font-display font-bold uppercase tracking-wider">Active Days</span>
-            <CalendarCheck2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+        <div className="rounded-md p-3 bg-[#0D1117] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Active Days</span>
+            <CalendarCheck2 className="w-3.5 h-3.5 text-[#8B949E]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-display font-black text-purple-950 dark:text-purple-100 mt-2">
-            <AnimatedCounter value={stats.totalActiveDays} />
+          <div className="text-xl font-mono font-semibold text-[#F0F6FC] mt-1">
+            <AnimatedCounter value={stats.totalActiveDays} suffix=" Days" />
           </div>
-          <div className="text-[11px] text-purple-700/80 dark:text-purple-400/80 mt-1 font-medium">
-            Total recorded dates
-          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">Recorded on calendar</div>
         </div>
 
-        {/* Total Activities - Royal Iris Tint */}
-        <div className="rounded-2xl p-4 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-800/30">
-          <div className="flex items-center justify-between text-indigo-800 dark:text-indigo-400">
-            <span className="text-[11px] font-display font-bold uppercase tracking-wider">Total Sessions</span>
-            <ActivityIcon className="w-4 h-4 text-iris" />
+        <div className="rounded-md p-3 bg-[#0D1117] border border-[#1E293B]">
+          <div className="flex items-center justify-between text-[#8B949E]">
+            <span className="text-[10px] font-mono uppercase tracking-wider">Total Recorded</span>
+            <ActivityIcon className="w-3.5 h-3.5 text-[#388BFD]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-display font-black text-indigo-950 dark:text-indigo-100 mt-2">
-            <AnimatedCounter value={stats.totalLogged} />
+          <div className="text-xl font-mono font-semibold text-[#F0F6FC] mt-1">
+            <AnimatedCounter value={stats.totalLogged} suffix=" Logs" />
           </div>
-          <div className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80 mt-1 font-medium">
-            Completed life blocks
-          </div>
+          <div className="text-[11px] text-[#64748B] mt-0.5">Completed life blocks</div>
         </div>
       </div>
 
-      {/* GitHub Calendar Grid in Electric Lime & Iris */}
-      <div className="overflow-x-auto pt-3 pb-2">
-        <div className="inline-flex gap-2 min-w-max">
-          <div className="flex flex-col justify-between py-1 text-[10px] text-slate-400 dark:text-slate-500 font-display font-bold pr-1 select-none">
+      {/* GitHub Calendar Grid (Single-color scale) */}
+      <div className="overflow-x-auto pt-1 pb-1">
+        {/* Month headers row */}
+        {monthLabels.length > 0 && (
+          <div className="flex pl-7 text-[10px] font-mono text-[#64748B] mb-1 select-none">
+            {monthLabels.map((ml, idx) => (
+              <div
+                key={idx}
+                style={{ width: `${ml.colIndex === 0 ? 3.8 : 4.4}rem` }}
+                className="shrink-0"
+              >
+                {ml.label}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="inline-flex gap-1.5 min-w-max">
+          <div className="flex flex-col justify-between py-0.5 text-[9px] text-[#64748B] font-mono pr-1 select-none">
             {dayLabels.map((lbl, idx) => (
-              <span key={idx} className="h-4 leading-4">
+              <span key={idx} className="h-3.5 leading-3.5">
                 {lbl}
               </span>
             ))}
           </div>
 
           {grid.map((week, wIdx) => (
-            <div key={wIdx} className="flex flex-col gap-2">
+            <div key={wIdx} className="flex flex-col gap-1.5">
               {week.map((day) => {
                 if (day.isFuture) {
                   return (
                     <div
                       key={day.dateStr}
-                      className="w-4 h-4 rounded-md border border-transparent opacity-0 pointer-events-none"
+                      className="w-3.5 h-3.5 rounded-sm border border-transparent opacity-0 pointer-events-none"
                     />
                   );
                 }
                 const isSelected = activeDate === day.dateStr;
+                const status = day.statusInfo.status;
+
+                let cellClass = '';
+                if (status === 'missing') {
+                  cellClass =
+                    'bg-[#090D12] border border-dashed border-[#30363D] opacity-60 hover:opacity-100 hover:border-[#64748B]';
+                } else if (status === 'empty') {
+                  cellClass =
+                    'bg-[#161B22] border border-[#21262D] hover:border-[#388BFD]/70';
+                } else {
+                  cellClass = getColorClass(day.count);
+                }
+
                 return (
                   <button
                     key={day.dateStr}
                     onClick={() => {
-                      setActiveDate(day.dateStr);
+                      const nextDate = activeDate === day.dateStr ? null : day.dateStr;
+                      setActiveDate(nextDate);
                       if (onSelectDate) onSelectDate(day.dateStr, day.activities);
                     }}
-                    title={`${day.dateStr}${day.isToday ? ' (Today)' : ''}: ${day.count} activities logged`}
-                    className={`w-4 h-4 rounded-md border transition-all ${getColorClass(
-                      day.count
-                    )} ${
+                    title={`${day.dateStr}${day.isToday ? ' (Today)' : ''} · ${day.statusInfo.label} · ${day.statusInfo.description}`}
+                    className={`w-3.5 h-3.5 rounded-sm transition-all ${cellClass} ${
                       isSelected
-                        ? 'ring-2 ring-slate-900 dark:ring-lime ring-offset-2 ring-offset-white dark:ring-offset-[#131A29] scale-110'
+                        ? 'ring-2 ring-[#388BFD] ring-offset-1 ring-offset-[#090D12] scale-110 z-10'
                         : day.isToday
-                        ? 'ring-2 ring-lime shadow-sm'
-                        : 'hover:scale-110'
+                        ? 'ring-1 ring-[#388BFD]'
+                        : ''
                     }`}
                   />
                 );
@@ -278,60 +345,129 @@ export default function ContributionHeatmap({
       </div>
 
       {/* Legend & Selected Day Indicator */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400 font-display">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-[11px]">Less</span>
-          <span className="w-3.5 h-3.5 rounded bg-slate-100 dark:bg-white/[0.05] border border-slate-200/50 inline-block" />
-          <span className="w-3.5 h-3.5 rounded bg-[#E4FBB5] border border-[#D4F655]/60 inline-block" />
-          <span className="w-3.5 h-3.5 rounded bg-[#D4F655] border border-[#C2E638] inline-block" />
-          <span className="w-3.5 h-3.5 rounded bg-[#A3E635] border border-[#84CC16] inline-block" />
-          <span className="w-3.5 h-3.5 rounded bg-[#5E43F3] border border-[#4D32E5] inline-block" />
-          <span className="font-semibold text-[11px]">More</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#1E293B] text-xs text-[#8B949E]">
+        <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
+          <span className="text-[#64748B]">Activity intensity:</span>
+          <span className="text-[#64748B] text-[10px]">Less</span>
+          <span className="w-3 h-3 rounded-sm bg-[#0D3868] border border-[#1B4B82]" title="Level 1" />
+          <span className="w-3 h-3 rounded-sm bg-[#1A5699] border border-[#236EC2]" title="Level 2" />
+          <span className="w-3 h-3 rounded-sm bg-[#2875D0] border border-[#368AE6]" title="Level 3" />
+          <span className="w-3 h-3 rounded-sm bg-[#58A6FF] border border-[#79B8FF]" title="Level 4" />
+          <span className="text-[#64748B] text-[10px]">More</span>
         </div>
 
-        {activeDate && (
-          <div className="text-slate-900 dark:text-white font-bold flex items-center gap-1.5">
-            <span>Selected:</span>
-            <span className="px-2 py-0.5 rounded-full bg-lime text-slate-950 text-[11px]">
-              {activeDate}
-            </span>
-            <span className="text-slate-500 dark:text-slate-400 font-normal">
-              ({selectedDayActivities.length} logs)
-            </span>
+        <div className="flex items-center gap-3 text-[11px] font-mono">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#161B22] border border-[#21262D]" />
+            <span className="text-[#8B949E]">Empty day</span>
           </div>
-        )}
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#090D12] border border-dashed border-[#30363D]" />
+            <span className="text-[#64748B]">Missing data</span>
+          </div>
+        </div>
       </div>
 
-      {/* Day Details Drawer when clicked */}
+      {/* Selected Day Timeline & Photos Drawer */}
       <AnimatePresence>
-        {activeDate && selectedDayActivities.length > 0 && (
+        {showDayDetails && activeDate && selectedDayStatus && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="rounded-2xl p-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] space-y-2.5 mt-3"
+            className="rounded-md p-3.5 bg-[#0D1117] border border-[#1E293B] space-y-2.5 mt-2"
           >
-            <div className="text-xs font-display font-extrabold text-slate-900 dark:text-white">
-              Activities logged on {activeDate}:
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[#F0F6FC]">
+                  Records for {new Date(activeDate + 'T00:00:00Z').toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+                <span className="text-[10px] font-mono text-[#388BFD]">
+                  ({selectedDayStatus.label})
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveDate(null)}
+                className="text-xs text-[#64748B] hover:text-[#F0F6FC]"
+              >
+                Close
+              </button>
             </div>
-            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-              {selectedDayActivities.map((act) => (
-                <div
-                  key={act.id}
-                  className="bg-white dark:bg-[#1A2238] border border-slate-200/60 dark:border-white/[0.06] rounded-xl px-3.5 py-2.5 text-xs flex items-center justify-between shadow-sm"
+
+            {selectedDayStatus.status === 'missing' && (
+              <div className="p-3 rounded-md bg-[#111827]/70 border border-dashed border-[#30363D] text-xs space-y-2">
+                <p className="text-[#8B949E]">
+                  <strong>Missing Data</strong> — No archive data was recorded for this day (prior to tracking start or unrecorded period).
+                </p>
+                <button
+                  onClick={() => handleOpenCaptureForDate(activeDate)}
+                  className="inline-flex btn-primary text-xs py-1 px-2.5 gap-1"
                 >
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-white">{act.title}</span>
-                    <span className="text-slate-400 font-mono text-[11px] ml-2">
-                      {act.startedAt.split('T')[1]?.slice(0, 5)}
-                    </span>
+                  <Plus className="w-3 h-3" />
+                  <span>Backfill Activity</span>
+                </button>
+              </div>
+            )}
+
+            {selectedDayStatus.status === 'empty' && (
+              <div className="p-3 rounded-md bg-[#111827]/70 border border-[#1E293B] text-xs space-y-2">
+                <p className="text-[#8B949E]">
+                  <strong>Empty Day</strong> — You were tracking during this period, but logged 0 activities (rest day).
+                </p>
+                <button
+                  onClick={() => handleOpenCaptureForDate(activeDate)}
+                  className="inline-flex btn-primary text-xs py-1 px-2.5 gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Record Activity</span>
+                </button>
+              </div>
+            )}
+
+            {selectedDayStatus.status === 'active' && (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {selectedDayActivities.map((act) => (
+                  <div
+                    key={act.id}
+                    onClick={() => onSelectActivity && onSelectActivity(act)}
+                    className="p-2.5 rounded-md bg-[#111827] border border-[#1E293B] hover:border-[#388BFD]/40 transition-colors flex items-center justify-between cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="text-[11px] font-mono text-[#64748B] shrink-0">
+                        {act.startedAt.split('T')[1]?.slice(0, 5) || '—'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-[#F0F6FC] truncate group-hover:text-[#388BFD] transition-colors">
+                          {act.title}
+                        </div>
+                        {act.description && (
+                          <div className="text-[11px] text-[#8B949E] truncate">
+                            {act.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {act.attachments && act.attachments.length > 0 && (
+                        <span className="text-[10px] font-mono text-[#388BFD] bg-[#161F2E] px-1.5 py-0.5 rounded border border-[#232E3E]">
+                          {act.attachments.length} {act.attachments.length === 1 ? 'photo' : 'photos'}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#161F2E] text-[#8B949E] border border-[#1E293B]">
+                        {act.categoryId}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#F0F6FC]" />
+                    </div>
                   </div>
-                  <span className="text-[10px] font-display font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-700 dark:text-slate-200">
-                    {act.categoryId}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

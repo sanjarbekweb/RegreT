@@ -10,9 +10,7 @@ import {
   Layers,
   FolderGit2,
   Hourglass,
-  ExternalLink,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { Activity, KnowledgeDocument, VocabularyWord, Project, Countdown } from '../../lib/types';
@@ -109,51 +107,51 @@ export default function UniversalSearchPage() {
   }, [query, activities, knowledgeDocs, vocabulary, projects, countdowns]);
 
   return (
-    <div className="space-y-7 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Top Header */}
-      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
-        <div className="text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-          Unified Search Engine
+      <div className="border-b border-[#1E293B] pb-3">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B]">
+          Command Palette & Search
         </div>
-        <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-white mt-1">
+        <h1 className="text-2xl font-sans font-semibold tracking-tight text-[#F0F6FC] mt-0.5">
           Universal Search
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl font-sans">
-          Search across activities, photos, quotes, lesson summaries, vocabulary, repositories, and deadlines.
+        <p className="text-xs text-[#8B949E] mt-0.5">
+          Search across activities, photos, literature quotes, research notes, vocabulary, repositories, and deadlines.
         </p>
       </div>
 
-      {/* Search Input Bar (Pill style) */}
+      {/* Search Input Bar (Linear Command Palette style) */}
       <div className="relative">
-        <Search className="w-5 h-5 text-slate-400 absolute left-4.5 top-3.5" />
+        <Search className="w-4 h-4 text-[#64748B] absolute left-3.5 top-3" />
         <input
           type="text"
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by keyword, topic, tag, quote, or project..."
-          className="w-full bento-card pl-12 pr-28 py-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lime font-sans shadow-sm"
+          className="w-full workspace-panel pl-10 pr-24 py-2.5 text-xs text-[#F0F6FC] placeholder:text-[#64748B] focus:outline-none focus:border-[#388BFD] bg-[#111827] border border-[#1E293B]"
         />
         {query && (
-          <div className="absolute right-4 top-3.5 text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300">
-            {results.total} found
+          <div className="absolute right-3 top-2.5 text-[10px] font-mono px-2 py-0.5 rounded bg-[#161F2E] text-[#8B949E] border border-[#1E293B]">
+            {results.total} {results.total === 1 ? 'result' : 'results'}
           </div>
         )}
       </div>
 
       {/* Results View */}
       {query.trim().length === 0 ? (
-        <div className="bento-card p-10 text-center space-y-4 bg-white dark:bg-[#131A29]">
-          <Search className="w-10 h-10 text-slate-300 mx-auto" />
-          <div className="text-xs font-display font-bold text-slate-700 dark:text-slate-300">
-            Type a query or select a quick track below
+        <div className="workspace-panel p-8 text-center space-y-3 bg-[#111827] border border-[#1E293B]">
+          <Search className="w-6 h-6 text-[#64748B] mx-auto" />
+          <div className="text-xs font-medium text-[#8B949E]">
+            Type a query or select a quick topic filter below
           </div>
-          <div className="flex flex-wrap justify-center gap-2 pt-2">
+          <div className="flex flex-wrap justify-center gap-1.5 pt-1">
             {['business', 'coding', 'deep work', 'f1', 'oxford', 'strength'].map((tag) => (
               <button
                 key={tag}
                 onClick={() => setQuery(tag)}
-                className="text-xs font-display font-bold px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 hover:bg-lime hover:text-slate-950 transition-all border border-slate-200/60 dark:border-white/[0.06]"
+                className="text-xs font-mono px-2.5 py-1 rounded bg-[#0D1117] text-[#8B949E] hover:text-[#F0F6FC] hover:border-[#388BFD]/40 transition-colors border border-[#1E293B]"
               >
                 #{tag}
               </button>
@@ -161,33 +159,33 @@ export default function UniversalSearchPage() {
           </div>
         </div>
       ) : results.total === 0 ? (
-        <div className="bento-card p-12 text-center text-xs text-slate-400 bg-white dark:bg-[#131A29]">
+        <div className="workspace-panel p-8 text-center text-xs text-[#64748B] bg-[#111827] border border-[#1E293B]">
           No records match &quot;{query}&quot;. Try a different keyword or category.
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Matched Activities */}
           {results.activities.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                <Clock className="w-4 h-4 text-lime" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#F0F6FC] uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-[#388BFD]" />
                 <span>Activities ({results.activities.length})</span>
               </div>
-              <div className="space-y-2">
+              <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
                 {results.activities.map((a) => (
                   <Link
                     key={a.id}
                     href="/timeline"
-                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
+                    className="p-3 block hover:bg-[#161F2E]/60 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{a.title}</span>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="font-medium text-xs text-[#F0F6FC]">{a.title}</span>
+                      <span className="text-[10px] font-mono text-[#64748B]">
                         {a.startedAt.split('T')[0]}
                       </span>
                     </div>
                     {a.description && (
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{a.description}</p>
+                      <p className="text-[11px] text-[#8B949E] line-clamp-1 mt-0.5">{a.description}</p>
                     )}
                   </Link>
                 ))}
@@ -197,26 +195,26 @@ export default function UniversalSearchPage() {
 
           {/* Matched Knowledge */}
           {results.knowledgeDocs.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                <BookOpen className="w-4 h-4 text-iris" />
-                <span>Knowledge Lessons ({results.knowledgeDocs.length})</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#F0F6FC] uppercase tracking-wider">
+                <BookOpen className="w-3.5 h-3.5 text-[#388BFD]" />
+                <span>Knowledge Vault ({results.knowledgeDocs.length})</span>
               </div>
-              <div className="space-y-2">
+              <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
                 {results.knowledgeDocs.map((k) => (
                   <Link
                     key={k.id}
                     href="/knowledge"
-                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
+                    className="p-3 block hover:bg-[#161F2E]/60 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{k.title}</span>
-                      <span className="text-[10px] font-display font-bold text-iris px-2.5 py-0.5 rounded-full bg-iris/10">
+                      <span className="font-medium text-xs text-[#F0F6FC]">{k.title}</span>
+                      <span className="text-[9px] font-mono text-[#388BFD] px-1.5 py-0.2 rounded bg-[#161F2E] border border-[#232E3E]">
                         {k.topic}
                       </span>
                     </div>
                     {k.aiSummary && (
-                      <p className="text-xs text-slate-500 line-clamp-2 mt-1 font-sans">{k.aiSummary}</p>
+                      <p className="text-[11px] text-[#8B949E] line-clamp-1 mt-0.5">{k.aiSummary}</p>
                     )}
                   </Link>
                 ))}
@@ -226,23 +224,23 @@ export default function UniversalSearchPage() {
 
           {/* Matched Vocabulary */}
           {results.vocabulary.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#F0F6FC] uppercase tracking-wider">
+                <Layers className="w-3.5 h-3.5 text-[#388BFD]" />
                 <span>Vocabulary Words ({results.vocabulary.length})</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {results.vocabulary.map((v) => (
                   <Link
                     key={v.id}
                     href="/vocabulary"
-                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
+                    className="workspace-panel p-3 hover:border-[#388BFD]/40 transition-colors bg-[#111827] border border-[#1E293B]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{v.word}</span>
-                      <span className="text-[10px] font-display uppercase font-bold text-slate-400">{v.partOfSpeech}</span>
+                      <span className="font-medium text-xs text-[#F0F6FC]">{v.word}</span>
+                      <span className="text-[9px] font-mono uppercase text-[#64748B]">{v.partOfSpeech}</span>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{v.definition}</p>
+                    <p className="text-[11px] text-[#8B949E] line-clamp-1 mt-0.5">{v.definition}</p>
                   </Link>
                 ))}
               </div>
@@ -251,23 +249,23 @@ export default function UniversalSearchPage() {
 
           {/* Matched Projects */}
           {results.projects.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                <FolderGit2 className="w-4 h-4 text-emerald-600 dark:text-mint" />
-                <span>Developer Projects ({results.projects.length})</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#F0F6FC] uppercase tracking-wider">
+                <FolderGit2 className="w-3.5 h-3.5 text-[#388BFD]" />
+                <span>Projects ({results.projects.length})</span>
               </div>
-              <div className="space-y-2">
+              <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
                 {results.projects.map((p) => (
                   <Link
                     key={p.id}
                     href="/projects"
-                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
+                    className="p-3 block hover:bg-[#161F2E]/60 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{p.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{p.githubRepo}</span>
+                      <span className="font-medium text-xs text-[#F0F6FC]">{p.name}</span>
+                      <span className="text-[10px] font-mono text-[#64748B]">{p.githubRepo}</span>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{p.description}</p>
+                    <p className="text-[11px] text-[#8B949E] line-clamp-1 mt-0.5">{p.description}</p>
                   </Link>
                 ))}
               </div>
@@ -276,26 +274,26 @@ export default function UniversalSearchPage() {
 
           {/* Matched Countdowns */}
           {results.countdowns.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-display font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                <Hourglass className="w-4 h-4 text-coral" />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#F0F6FC] uppercase tracking-wider">
+                <Hourglass className="w-3.5 h-3.5 text-[#388BFD]" />
                 <span>Deadlines & Milestones ({results.countdowns.length})</span>
               </div>
-              <div className="space-y-2">
+              <div className="workspace-panel divide-y divide-[#1E293B] bg-[#111827] border border-[#1E293B] overflow-hidden">
                 {results.countdowns.map((c) => (
                   <Link
                     key={c.id}
                     href="/countdowns"
-                    className="block bento-card p-4 hover:border-lime/60 transition-all bg-white dark:bg-[#131A29]"
+                    className="p-3 block hover:bg-[#161F2E]/60 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">{c.title}</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-coral/15 text-coral-dark dark:text-coral">
-                        Target: {c.targetDate.replace('T', ' ')}
+                      <span className="font-medium text-xs text-[#F0F6FC]">{c.title}</span>
+                      <span className="text-[10px] font-mono text-[#388BFD]">
+                        {c.targetDate.replace('T', ' ')}
                       </span>
                     </div>
                     {c.description && (
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-sans">{c.description}</p>
+                      <p className="text-[11px] text-[#8B949E] line-clamp-1 mt-0.5">{c.description}</p>
                     )}
                   </Link>
                 ))}

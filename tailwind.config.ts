@@ -10,75 +10,94 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Core Canvas & Surfaces
+        // Linear-inspired dark workspace foundation
+        workspace: {
+          bg: "#090D12",
+          surface: "#111827",
+          subtle: "#161F2E",
+          elevated: "#1A2333",
+          border: "#1E293B",
+          "border-subtle": "#16202E",
+        },
+        // Canonical color mappings
         canvas: {
-          DEFAULT: "var(--background, #F4F6F9)",
-          dark: "#090D14",
+          DEFAULT: "var(--background, #090D12)",
+          dark: "#090D12",
         },
-        background: "var(--background, #F4F6F9)",
-        sidebar: "var(--sidebar, #FFFFFF)",
-        surface: "var(--surface, #FFFFFF)",
-        elevated: "var(--elevated, #FFFFFF)",
-        border: "var(--border, rgba(15, 23, 42, 0.08))",
-        foreground: "var(--foreground, #0F172A)",
-        muted: "var(--muted, #64748B)",
+        background: "var(--background, #090D12)",
+        sidebar: "var(--sidebar, #0D1117)",
+        surface: "var(--surface, #111827)",
+        "surface-subtle": "var(--surface-subtle, #161F2E)",
+        elevated: "var(--elevated, #1A2333)",
+        border: "var(--border, #1E293B)",
+        foreground: "var(--foreground, #F0F6FC)",
+        muted: "var(--muted, #8B949E)",
 
-        // Signature Palette: NO BLUE
-        lime: {
-          DEFAULT: "#D4F655",
-          hover: "#C5EA40",
-          light: "#F5FDE0",
-          dark: "#84CC16",
-          ink: "#0F172A",
+        // Single Muted Blue Accent for primary actions and selected states
+        accent: {
+          DEFAULT: "#388BFD",
+          hover: "#3178DE",
+          subtle: "rgba(56, 139, 253, 0.12)",
+          border: "rgba(56, 139, 253, 0.25)",
         },
-        iris: {
-          DEFAULT: "#5E43F3",
-          hover: "#4D32E5",
-          light: "#EEF2FF",
-          border: "#C7D2FE",
-          dark: "#4338CA",
-        },
-        coral: {
-          DEFAULT: "#FF6B4A",
-          hover: "#FA5530",
-          light: "#FFF1EE",
-          border: "#FED7AA",
-          dark: "#C2410C",
-        },
-        mint: {
-          DEFAULT: "#34D399",
-          hover: "#10B981",
-          light: "#ECFDF5",
-          border: "#A7F3D0",
-          dark: "#047857",
-        },
-        lilac: {
-          DEFAULT: "#E9D5FF",
-          hover: "#DDD6FE",
-          light: "#FAF5FF",
-          border: "#E9D5FF",
-          dark: "#7C3AED",
-        },
-
-        // Functional Roles
         primary: {
-          DEFAULT: "#D4F655",
-          hover: "#C5EA40",
-          foreground: "#0F172A",
-        },
-        secondary: {
-          DEFAULT: "#5E43F3",
-          hover: "#4D32E5",
+          DEFAULT: "#388BFD",
+          hover: "#3178DE",
           foreground: "#FFFFFF",
         },
-        success: "#10B981",
-        warning: "#F59E0B",
-        danger: "#FF6B4A",
+        secondary: {
+          DEFAULT: "#161F2E",
+          hover: "#1E293B",
+          foreground: "#F0F6FC",
+        },
+
+        // Functional states (subtle, restrained)
+        success: "#238636",
+        warning: "#D29922",
+        danger: "#F85149",
+
+        // Backward compatibility mappings
+        lime: {
+          DEFAULT: "#388BFD",
+          hover: "#3178DE",
+          light: "#EBF5FF",
+          dark: "#1D4ED8",
+          ink: "#FFFFFF",
+        },
+        iris: {
+          DEFAULT: "#388BFD",
+          hover: "#3178DE",
+          light: "#EBF5FF",
+          border: "#1E293B",
+          dark: "#1D4ED8",
+        },
+        coral: {
+          DEFAULT: "#F85149",
+          hover: "#DA3633",
+          light: "rgba(248, 81, 73, 0.15)",
+          border: "#1E293B",
+          dark: "#B62324",
+        },
+        mint: {
+          DEFAULT: "#238636",
+          hover: "#2EA043",
+          light: "rgba(35, 134, 54, 0.15)",
+          border: "#1E293B",
+          dark: "#196C2E",
+        },
+        lilac: {
+          DEFAULT: "#8B949E",
+          hover: "#A3ADC2",
+          light: "rgba(139, 148, 158, 0.15)",
+          border: "#1E293B",
+          dark: "#6E7681",
+        },
       },
       fontFamily: {
         sans: [
           "var(--font-sans)",
-          "Plus Jakarta Sans",
+          "Geist",
+          "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
@@ -87,12 +106,14 @@ const config: Config = {
         ],
         display: [
           "var(--font-display)",
-          "Outfit",
-          "Plus Jakarta Sans",
+          "Geist",
+          "Inter",
+          "-apple-system",
           "sans-serif",
         ],
         mono: [
           "var(--font-mono)",
+          "Geist Mono",
           "JetBrains Mono",
           "ui-monospace",
           "SFMono-Regular",
@@ -100,17 +121,15 @@ const config: Config = {
         ],
       },
       borderRadius: {
-        "2xl": "1rem",
-        "3xl": "1.5rem",
-        "4xl": "2rem",
-        "bento": "1.75rem", // 28px
+        md: "6px",
+        lg: "8px",
+        xl: "12px",
+        "2xl": "14px",
       },
       boxShadow: {
-        bento: "0 10px 30px -5px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02)",
-        "bento-hover": "0 20px 40px -10px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.03)",
-        "bento-elevated": "0 20px 50px -12px rgba(15, 23, 42, 0.12)",
-        pill: "0 4px 14px rgba(212, 246, 85, 0.35)",
-        "pill-iris": "0 4px 14px rgba(94, 67, 243, 0.35)",
+        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.4)",
+        panel: "0 4px 20px -2px rgba(0, 0, 0, 0.5)",
+        popover: "0 8px 30px -4px rgba(0, 0, 0, 0.6)",
       },
     },
   },
