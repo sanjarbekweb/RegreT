@@ -38,7 +38,7 @@ export default function ContributionHeatmap({
 
   // Generate grid of weeks ending today
   const { grid, stats } = useMemo(() => {
-    const today = new Date('2026-10-10'); // Standardized reference date
+    const today = new Date();
     const totalDays = weeksToShow * 7;
     const days: { date: Date; dateStr: string; count: number; activities: Activity[] }[] = [];
 

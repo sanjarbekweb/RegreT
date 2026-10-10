@@ -12,11 +12,18 @@ import {
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
+    id: 'wakeup',
+    name: 'Wake Up',
+    color: '#F59E0B',
+    description: 'Morning wake up timestamp, selfie check-in, and morning protocol',
+    icon: 'Sun',
+  },
+  {
     id: 'personal',
     name: 'Personal',
     color: '#64748B',
-    description: 'Wake up, daily routines, thoughts, reflections',
-    icon: 'Sun',
+    description: 'Daily routines, thoughts, reflections',
+    icon: 'Compass',
   },
   {
     id: 'health',
@@ -656,7 +663,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
 
 export function generatePastHabitCompletions(): HabitCompletion[] {
   const completions: HabitCompletion[] = [];
-  const today = new Date('2026-10-10');
+  const today = new Date();
 
   for (let i = 0; i < 90; i++) {
     const d = new Date(today);
@@ -712,9 +719,10 @@ export function generatePastHabitCompletions(): HabitCompletion[] {
 
 export function generatePastActivities(): Activity[] {
   const past: Activity[] = [...INITIAL_ACTIVITIES];
-  const today = new Date('2026-10-10');
+  const today = new Date();
 
   const categories: Array<Activity['categoryId']> = [
+    'wakeup',
     'personal',
     'health',
     'education',
@@ -803,9 +811,57 @@ class StorageService {
     }
   }
 
+  private syncToIndexedDB(storeName: string, data: any): void {
+    if (!this.isBrowser() || !('indexedDB' in window)) return;
+    try {
+      const request = indexedDB.open('RegreT_LifeOS_DB', 1);
+      request.onupgradeneeded = (e: any) => {
+        const db = e.target.result;
+        ['activities', 'habits', 'flashcards', 'vocabulary', 'knowledge', 'projects', 'countdowns'].forEach(store => {
+          if (!db.objectStoreNames.contains(store)) {
+            db.createObjectStore(store, { keyPath: 'id' });
+          }
+        });
+      };
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(storeName)) return;
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            if (item && item.id) store.put(item);
+          });
+        }
+      };
+    } catch {
+      // IndexedDB failure gracefully handled
+    }
+  }
+
   saveActivities(activities: Activity[]): void {
     if (this.isBrowser()) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+      try {
+        localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+      } catch (err: any) {
+        console.warn('LocalStorage quota reached. Mitigating by pruning older image payloads.', err);
+        const pruned = activities.map((act, index) => {
+          if (index < 10) return act;
+          return {
+            ...act,
+            attachments: act.attachments.map(att => ({
+              ...att,
+              url: att.url.length > 500 ? 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%2317212D" width="100" height="100"/></svg>' : att.url
+            }))
+          };
+        });
+        try {
+          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(pruned));
+        } catch {
+          localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(pruned.slice(0, 40)));
+        }
+      }
+      this.syncToIndexedDB('activities', activities);
     } else {
       this.memActivities = [...activities];
     }
@@ -847,9 +903,15 @@ class StorageService {
   saveHabits(habits: Habit[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+      this.syncToIndexedDB('habits', habits);
     } else {
       this.memHabits = [...habits];
     }
+  }
+
+  deleteHabit(id: string): void {
+    const list = this.getHabits().filter(h => h.id !== id);
+    this.saveHabits(list);
   }
 
   getHabitCompletions(): HabitCompletion[] {
@@ -916,6 +978,7 @@ class StorageService {
   saveFlashcards(flashcards: Flashcard[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.FLASHCARDS, JSON.stringify(flashcards));
+      this.syncToIndexedDB('flashcards', flashcards);
     } else {
       this.memFlashcards = [...flashcards];
     }
@@ -929,6 +992,11 @@ class StorageService {
 
   updateFlashcard(card: Flashcard): void {
     const list = this.getFlashcards().map(c => (c.id === card.id ? card : c));
+    this.saveFlashcards(list);
+  }
+
+  deleteFlashcard(id: string): void {
+    const list = this.getFlashcards().filter(c => c.id !== id);
     this.saveFlashcards(list);
   }
 
@@ -952,6 +1020,7 @@ class StorageService {
   saveVocabulary(words: VocabularyWord[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.VOCABULARY, JSON.stringify(words));
+      this.syncToIndexedDB('vocabulary', words);
     } else {
       this.memVocabulary = [...words];
     }
@@ -960,6 +1029,20 @@ class StorageService {
   addVocabularyWord(word: VocabularyWord): void {
     const list = this.getVocabulary();
     list.unshift(word);
+    this.saveVocabulary(list);
+  }
+
+  updateVocabularyWord(word: VocabularyWord): void {
+    const list = this.getVocabulary().map(w => (w.id === word.id ? word : w));
+    this.saveVocabulary(list);
+  }
+
+  deleteVocabularyWord(id: string): void {
+    const word = this.getVocabulary().find(w => w.id === id);
+    if (word && word.flashcardId) {
+      this.deleteFlashcard(word.flashcardId);
+    }
+    const list = this.getVocabulary().filter(w => w.id !== id);
     this.saveVocabulary(list);
   }
 
@@ -983,6 +1066,7 @@ class StorageService {
   saveKnowledgeDocs(docs: KnowledgeDocument[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.KNOWLEDGE_DOCS, JSON.stringify(docs));
+      this.syncToIndexedDB('knowledge', docs);
     } else {
       this.memKnowledge = [...docs];
     }
@@ -991,6 +1075,15 @@ class StorageService {
   addKnowledgeDoc(doc: KnowledgeDocument): void {
     const list = this.getKnowledgeDocs();
     list.unshift(doc);
+    this.saveKnowledgeDocs(list);
+  }
+
+  deleteKnowledgeDoc(id: string): void {
+    const doc = this.getKnowledgeDocs().find(d => d.id === id);
+    if (doc && doc.flashcardIds) {
+      doc.flashcardIds.forEach(fcId => this.deleteFlashcard(fcId));
+    }
+    const list = this.getKnowledgeDocs().filter(d => d.id !== id);
     this.saveKnowledgeDocs(list);
   }
 
@@ -1014,6 +1107,7 @@ class StorageService {
   saveProjects(projects: Project[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+      this.syncToIndexedDB('projects', projects);
     } else {
       this.memProjects = [...projects];
     }
@@ -1022,6 +1116,11 @@ class StorageService {
   addProject(project: Project): void {
     const list = this.getProjects();
     list.unshift(project);
+    this.saveProjects(list);
+  }
+
+  deleteProject(id: string): void {
+    const list = this.getProjects().filter(p => p.id !== id);
     this.saveProjects(list);
   }
 
@@ -1045,6 +1144,7 @@ class StorageService {
   saveCountdowns(countdowns: Countdown[]): void {
     if (this.isBrowser()) {
       localStorage.setItem(STORAGE_KEYS.COUNTDOWNS, JSON.stringify(countdowns));
+      this.syncToIndexedDB('countdowns', countdowns);
     } else {
       this.memCountdowns = [...countdowns];
     }
@@ -1053,6 +1153,11 @@ class StorageService {
   addCountdown(countdown: Countdown): void {
     const list = this.getCountdowns();
     list.push(countdown);
+    this.saveCountdowns(list);
+  }
+
+  deleteCountdown(id: string): void {
+    const list = this.getCountdowns().filter(c => c.id !== id);
     this.saveCountdowns(list);
   }
 

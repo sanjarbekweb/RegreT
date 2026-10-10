@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Plus, Play, Pause, Square, Clock } from 'lucide-react';
 import { Activity, CategoryId } from '../lib/types';
-import { storage } from '../lib/storage';
+import { storage, INITIAL_CATEGORIES } from '../lib/storage';
 
 export default function Header() {
   const [currentDate, setCurrentDate] = useState<string>('');
@@ -12,6 +12,7 @@ export default function Header() {
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
   const [timerSeconds, setTimerSeconds] = useState<number>(0);
   const [timerTitle, setTimerTitle] = useState<string>('Coding Session');
+  const [timerCategory, setTimerCategory] = useState<CategoryId>('coding');
   const [showTimerModal, setShowTimerModal] = useState<boolean>(false);
 
   useEffect(() => {
@@ -72,11 +73,11 @@ export default function Header() {
     const newActivity: Activity = {
       id: `act-${Date.now()}`,
       title: timerTitle || 'Timed Focus Session',
-      categoryId: 'coding',
+      categoryId: timerCategory,
       description: `Timed session completed. Total duration: ${formatTimer(timerSeconds)}.`,
       startedAt: started.toISOString(),
       endedAt: now.toISOString(),
-      tags: ['timer', 'focus'],
+      tags: ['timer', timerCategory],
       attachments: [],
       source: 'timer',
       createdAt: now.toISOString(),
@@ -172,6 +173,20 @@ export default function Header() {
                 placeholder="e.g. Coding Personal OS, Gym Workout, Reading"
                 className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-mono text-muted mb-1">Activity Category</label>
+              <select
+                value={timerCategory}
+                onChange={(e) => setTimerCategory(e.target.value as CategoryId)}
+                className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+              >
+                {INITIAL_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.description})
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="pt-2 flex justify-end gap-2">
               <button

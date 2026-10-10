@@ -1,4 +1,5 @@
 export type CategoryId =
+  | 'wakeup'
   | 'personal'
   | 'health'
   | 'education'

@@ -69,6 +69,34 @@ export default function FlashcardViewer({
     // Save to persistent storage
     storage.updateFlashcard(updatedCard);
 
+    // Update associated VocabularyWord mastery level if this flashcard represents vocabulary
+    if (currentCard.vocabularyId || currentCard.category === 'Vocabulary') {
+      const vocabList = storage.getVocabulary();
+      const word = vocabList.find(
+        (w) => w.id === currentCard.vocabularyId || w.flashcardId === currentCard.id
+      );
+      if (word) {
+        let newLevel: 'learning' | 'reviewing' | 'mastered' = word.masteryLevel;
+        if (updatedMetrics.repetitions >= 4 || updatedMetrics.intervalDays >= 21) {
+          newLevel = 'mastered';
+        } else if (updatedMetrics.repetitions >= 2 || updatedMetrics.intervalDays >= 4) {
+          newLevel = 'reviewing';
+        } else if (grade === 1) {
+          newLevel = 'learning';
+        }
+        if (newLevel !== word.masteryLevel) {
+          storage.updateVocabularyWord({
+            ...word,
+            masteryLevel: newLevel,
+          });
+        }
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('regret_data_updated'));
+    }
+
     // Advance to next card
     if (currentIndex + 1 < sessionCards.length) {
       setCurrentIndex((prev) => prev + 1);

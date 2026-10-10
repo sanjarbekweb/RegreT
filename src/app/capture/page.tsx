@@ -16,19 +16,27 @@ import {
   BookOpen,
   Film,
   Check,
+  Video,
+  X,
 } from 'lucide-react';
 import { INITIAL_CATEGORIES, INITIAL_PROJECTS, storage } from '../../lib/storage';
 import { Activity, CategoryId, Attachment } from '../../lib/types';
+import { compressImage } from '../../lib/image-compress';
 
 export default function QuickCapturePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [title, setTitle] = useState('');
-  const [categoryId, setCategoryId] = useState<CategoryId>('personal');
+  const [categoryId, setCategoryId] = useState<CategoryId>('wakeup');
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraError, setCameraError] = useState('');
 
   // Coding specific
   const [githubRepo, setGithubRepo] = useState('');
@@ -82,27 +90,98 @@ export default function QuickCapturePage() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Handle file / photo upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const startCamera = async () => {
+    setCameraError('');
+    setShowCameraModal(true);
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        streamRef.current = stream;
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+          }
+        }, 50);
+      } else {
+        cameraInputRef.current?.click();
+        setShowCameraModal(false);
+      }
+    } catch (err: any) {
+      console.warn('Direct camera stream unavailable, opening native camera picker:', err);
+      setCameraError('Camera stream unavailable. Opening camera picker...');
+      setShowCameraModal(false);
+      cameraInputRef.current?.click();
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setShowCameraModal(false);
+  };
+
+  const snapPhoto = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    stopCamera();
+
+    const { dataUrl, sizeBytes } = await compressImage(rawDataUrl, 1280, 0.82);
+    const newAtt: Attachment = {
+      id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      url: dataUrl,
+      originalName: `selfie_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
+      mimeType: 'image/jpeg',
+      sizeBytes,
+      caption: categoryId === 'wakeup' ? 'Morning wake up selfie verification' : 'Camera photo proof',
+      createdAt: new Date().toISOString(),
+    };
+    setAttachments((prev) => [...prev, newAtt]);
+
+    if (!title.trim() && categoryId === 'wakeup') {
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      setTitle(`Woke up at ${timeStr}`);
+    }
+  };
+
+  // Handle file / photo upload with canvas compression
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const dataUrl = uploadEvent.target?.result as string;
+    for (const file of Array.from(files)) {
+      try {
+        const { dataUrl, sizeBytes } = await compressImage(file, 1280, 0.82);
         const newAtt: Attachment = {
           id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
           url: dataUrl,
           originalName: file.name,
           mimeType: file.type || 'image/jpeg',
-          sizeBytes: file.size,
+          sizeBytes,
+          caption: categoryId === 'wakeup' ? 'Wake up verification photo' : undefined,
           createdAt: new Date().toISOString(),
         };
         setAttachments((prev) => [...prev, newAtt]);
-      };
-      reader.readAsDataURL(file);
-    });
+
+        if (!title.trim() && categoryId === 'wakeup') {
+          const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          setTitle(`Woke up at ${timeStr}`);
+        }
+      } catch (err) {
+        console.error('Failed to compress image:', err);
+      }
+    }
   };
 
   const handleRemoveAttachment = (id: string) => {
@@ -475,14 +554,24 @@ export default function QuickCapturePage() {
                 Selfies, coding screenshots, textbook pages, whiteboard sketches
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-secondary text-xs py-1.5 px-3"
-            >
-              <Upload className="w-3.5 h-3.5 text-primary" />
-              <span>Add Images</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={startCamera}
+                className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Take Selfie / Photo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+              >
+                <Upload className="w-3.5 h-3.5 text-primary" />
+                <span>Upload</span>
+              </button>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -491,7 +580,21 @@ export default function QuickCapturePage() {
               onChange={handleFileUpload}
               className="hidden"
             />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </div>
+
+          {cameraError && (
+            <div className="p-2.5 rounded bg-warning/15 border border-warning/30 text-warning text-xs">
+              {cameraError}
+            </div>
+          )}
 
           {/* Photo Preview Grid */}
           {attachments.length > 0 ? (
@@ -524,16 +627,34 @@ export default function QuickCapturePage() {
               ))}
             </div>
           ) : (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-border hover:border-primary/50 rounded-lg p-6 text-center cursor-pointer transition-colors"
-            >
-              <Camera className="w-8 h-8 text-muted mx-auto mb-2" />
-              <div className="text-xs font-medium text-foreground">
-                Drop photos here or click to browse
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center space-y-3">
+              <Camera className="w-8 h-8 text-primary mx-auto opacity-80" />
+              <div>
+                <div className="text-xs font-medium text-foreground">
+                  {categoryId === 'wakeup'
+                    ? 'Take your wake-up selfie verification'
+                    : 'Capture camera proof or upload screenshot'}
+                </div>
+                <div className="text-[11px] text-muted mt-1">
+                  Stored permanently in your life operating system
+                </div>
               </div>
-              <div className="text-[11px] text-muted mt-1">
-                Waking up selfie, screen capture, workout proof, or book quotes
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Take Selfie Now</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                >
+                  Browse Files
+                </button>
               </div>
             </div>
           )}
@@ -554,6 +675,62 @@ export default function QuickCapturePage() {
           </button>
         </div>
       </form>
+
+      {/* Live Camera Snapshot Modal */}
+      {showCameraModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-border pb-2">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold text-foreground font-mono">
+                  {categoryId === 'wakeup' ? 'Wake-Up Selfie Verification' : 'Camera Snapshot'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="text-muted hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative rounded overflow-hidden aspect-video bg-black flex items-center justify-center border border-border">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-muted font-mono">
+                {categoryId === 'wakeup' ? 'Verify wake-up timestamp' : 'Frame your capture'}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={snapPhoto}
+                  className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Snap Photo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

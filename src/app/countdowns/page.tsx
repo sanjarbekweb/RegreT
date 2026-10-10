@@ -35,9 +35,25 @@ export default function CountdownsPage() {
 
   useEffect(() => {
     loadData();
+    const handleUpdate = () => loadData();
+    window.addEventListener('regret_data_updated', handleUpdate);
     const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('regret_data_updated', handleUpdate);
+      clearInterval(interval);
+    };
   }, []);
+
+  const handleDeleteCountdown = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm('Permanently remove this deadline countdown?')) {
+      storage.deleteCountdown(id);
+      loadData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
+    }
+  };
 
   const handleToggleChecklist = (countdownId: string, checklistId: string) => {
     storage.toggleCountdownChecklist(countdownId, checklistId);
@@ -152,17 +168,27 @@ export default function CountdownsPage() {
                     <h3 className="font-bold text-base text-foreground mt-2">{cd.title}</h3>
                   </div>
 
-                  {cd.targetUrl && (
-                    <a
-                      href={cd.targetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-1.5 rounded bg-elevated border border-border text-muted hover:text-primary transition-colors"
-                      title="Open application portal"
+                  <div className="flex items-center gap-1.5">
+                    {cd.targetUrl && (
+                      <a
+                        href={cd.targetUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded bg-elevated border border-border text-muted hover:text-primary transition-colors"
+                        title="Open application portal"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCountdown(cd.id, e)}
+                      className="p-1.5 rounded bg-elevated border border-border text-muted hover:text-danger hover:border-danger/40 transition-colors"
+                      title="Delete Deadline"
                     >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Live Countdown Clock Ticker */}

@@ -25,6 +25,8 @@ export default function SettingsBackupPage() {
     flashcards: 0,
     vocabulary: 0,
     knowledgeDocs: 0,
+    projects: 0,
+    countdowns: 0,
   });
 
   const loadStats = () => {
@@ -34,6 +36,8 @@ export default function SettingsBackupPage() {
       flashcards: storage.getFlashcards().length,
       vocabulary: storage.getVocabulary().length,
       knowledgeDocs: storage.getKnowledgeDocs().length,
+      projects: storage.getProjects().length,
+      countdowns: storage.getCountdowns().length,
     });
     setApiKey(storage.getApiKey());
   };
@@ -115,7 +119,7 @@ export default function SettingsBackupPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           <div className="bg-elevated border border-border rounded p-3 text-center">
             <div className="text-lg font-bold font-mono text-foreground">{stats.activities}</div>
             <div className="text-[10px] font-mono text-muted uppercase">Activities</div>
@@ -135,6 +139,14 @@ export default function SettingsBackupPage() {
           <div className="bg-elevated border border-border rounded p-3 text-center">
             <div className="text-lg font-bold font-mono text-foreground">{stats.knowledgeDocs}</div>
             <div className="text-[10px] font-mono text-muted uppercase">Lessons</div>
+          </div>
+          <div className="bg-elevated border border-border rounded p-3 text-center">
+            <div className="text-lg font-bold font-mono text-foreground">{stats.projects}</div>
+            <div className="text-[10px] font-mono text-muted uppercase">Projects</div>
+          </div>
+          <div className="bg-elevated border border-border rounded p-3 text-center">
+            <div className="text-lg font-bold font-mono text-foreground">{stats.countdowns}</div>
+            <div className="text-[10px] font-mono text-muted uppercase">Deadlines</div>
           </div>
         </div>
 

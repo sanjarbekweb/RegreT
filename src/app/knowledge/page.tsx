@@ -13,6 +13,7 @@ import {
   CheckCircle,
   HelpCircle,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { KnowledgeDocument, Quiz, Flashcard } from '../../lib/types';
@@ -23,6 +24,7 @@ import FlashcardViewer from '../../components/FlashcardViewer';
 export default function KnowledgeVaultPage() {
   const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<KnowledgeDocument | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // New Lesson State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -40,6 +42,44 @@ export default function KnowledgeVaultPage() {
     setDocs(list);
     if (list.length > 0 && !selectedDoc) {
       setSelectedDoc(list[0]);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const cleanName = file.name
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    if (!newTitle) setNewTitle(cleanName);
+
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.includes('business')) setNewTopic('Business');
+    else if (lowerName.includes('econ')) setNewTopic('Economics');
+    else if (lowerName.includes('code') || lowerName.includes('cs') || lowerName.includes('tech')) setNewTopic('Computer Science');
+    else if (lowerName.includes('math')) setNewTopic('Mathematics');
+    else if (!newTopic) setNewTopic('General Study');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setNewContent(content);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDeleteDoc = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm('Permanently remove this knowledge document and its generated quizzes?')) {
+      storage.deleteKnowledgeDoc(id);
+      const remaining = storage.getKnowledgeDocs();
+      setDocs(remaining);
+      setSelectedDoc(remaining.length > 0 ? remaining[0] : null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
     }
   };
 
@@ -231,6 +271,13 @@ export default function KnowledgeVaultPage() {
                       <span>Take AI Quiz</span>
                     </button>
                   )}
+                  <button
+                    onClick={(e) => handleDeleteDoc(selectedDoc.id, e)}
+                    className="p-1.5 rounded bg-elevated border border-danger/40 text-danger hover:bg-danger/20 transition-colors"
+                    title="Delete Lesson Document"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -362,15 +409,32 @@ export default function KnowledgeVaultPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-muted mb-1">
-                  Lesson Notes / Ingested Content *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-mono text-muted">
+                    Lesson Notes / Ingested Content *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1.5"
+                  >
+                    <Upload className="w-3 h-3 text-primary" />
+                    <span>Upload Study File</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.md,.json,.csv,.pdf,text/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
                 <textarea
                   required
                   rows={8}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Paste lecture transcript, reading notes, textbook excerpts, or case study facts..."
+                  placeholder="Upload study file or paste lecture transcript, business case notes, textbook excerpts..."
                   className="w-full bg-elevated border border-border rounded px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono"
                 />
               </div>

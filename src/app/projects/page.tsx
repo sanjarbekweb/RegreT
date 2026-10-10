@@ -41,7 +41,21 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     loadData();
+    const handleUpdate = () => loadData();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
+
+  const handleDeleteProject = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (confirm('Permanently remove this project and its repository connections?')) {
+      storage.deleteProject(id);
+      loadData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
+    }
+  };
 
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +147,17 @@ export default function ProjectsPage() {
                   </div>
                   <h3 className="font-bold text-base text-foreground mt-1.5">{proj.name}</h3>
                 </div>
-                <FolderGit2 className="w-5 h-5 text-primary" />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteProject(proj.id, e)}
+                    className="p-1 rounded text-muted hover:text-danger hover:bg-elevated transition-colors"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <FolderGit2 className="w-5 h-5 text-primary" />
+                </div>
               </div>
 
               <p className="text-xs text-muted leading-relaxed line-clamp-2">{proj.description}</p>

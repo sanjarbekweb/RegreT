@@ -10,6 +10,7 @@ import {
   Award,
   TrendingUp,
   Target,
+  Trash2,
 } from 'lucide-react';
 import ContributionHeatmap from '../../components/ContributionHeatmap';
 import { storage, INITIAL_CATEGORIES } from '../../lib/storage';
@@ -26,12 +27,13 @@ export default function ConsistencyCalendarPage() {
   const [newHabitTarget, setNewHabitTarget] = useState(7);
   const [showAddHabit, setShowAddHabit] = useState(false);
 
-  const todayStr = '2026-10-10';
+  const [todayStr, setTodayStr] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const loadData = () => {
     setActivities(storage.getActivities());
     setHabits(storage.getHabits());
     setCompletions(storage.getHabitCompletions());
+    setTodayStr(new Date().toISOString().split('T')[0]);
   };
 
   useEffect(() => {
@@ -40,6 +42,16 @@ export default function ConsistencyCalendarPage() {
     window.addEventListener('regret_data_updated', handleUpdate);
     return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
+
+  const handleDeleteHabit = (id: string) => {
+    if (confirm('Permanently remove this habit and its tracking history?')) {
+      storage.deleteHabit(id);
+      loadData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
+    }
+  };
 
   const handleToggleHabit = (habitId: string, dateStr: string) => {
     storage.toggleHabitCompletion(habitId, dateStr);
@@ -212,6 +224,7 @@ export default function ConsistencyCalendarPage() {
                     <div className="text-[10px] text-muted/60">{d.slice(8)}</div>
                   </th>
                 ))}
+                <th className="pb-2 font-medium text-right pr-2">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -262,6 +275,15 @@ export default function ConsistencyCalendarPage() {
                         </td>
                       );
                     })}
+                    <td className="py-3 text-right pr-2">
+                      <button
+                        onClick={() => handleDeleteHabit(habit.id)}
+                        className="p-1 rounded text-muted hover:text-danger hover:bg-elevated transition-colors"
+                        title="Delete Habit"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}

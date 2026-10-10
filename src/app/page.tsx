@@ -28,7 +28,7 @@ export default function DashboardOverview() {
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [countdowns, setCountdowns] = useState<Countdown[]>([]);
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
-  const [todayStr, setTodayStr] = useState<string>('2026-10-10');
+  const [todayStr, setTodayStr] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const loadData = () => {
     setActivities(storage.getActivities());
@@ -36,6 +36,7 @@ export default function DashboardOverview() {
     setCompletions(storage.getHabitCompletions());
     setCountdowns(storage.getCountdowns());
     setKnowledgeDocs(storage.getKnowledgeDocs());
+    setTodayStr(new Date().toISOString().split('T')[0]);
   };
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import {
   Sparkles,
   BookOpen,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { VocabularyWord, Flashcard } from '../../lib/types';
@@ -41,7 +42,20 @@ export default function VocabularyPage() {
 
   useEffect(() => {
     loadData();
+    const handleUpdate = () => loadData();
+    window.addEventListener('regret_data_updated', handleUpdate);
+    return () => window.removeEventListener('regret_data_updated', handleUpdate);
   }, []);
+
+  const handleDeleteWord = (id: string) => {
+    if (confirm('Permanently remove this vocabulary word and its flashcard?')) {
+      storage.deleteVocabularyWord(id);
+      loadData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('regret_data_updated'));
+      }
+    }
+  };
 
   const handleAddWord = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,9 +265,19 @@ export default function VocabularyPage() {
               >
                 {word.masteryLevel}
               </span>
-              <span className="text-muted/70">
-                Added {word.addedAt.split('T')[0]}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-muted/70">
+                  Added {word.addedAt.split('T')[0]}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteWord(word.id)}
+                  className="p-1 rounded text-muted hover:text-danger hover:bg-elevated transition-colors"
+                  title="Delete Word"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
