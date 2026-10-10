@@ -1,0 +1,17 @@
+{
+  "name": "RegreT — Personal Life OS",
+  "short_name": "RegreT",
+  "description": "Personal Knowledge Base, Life Log, Consistency Engine, and Project Portfolio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090D12",
+  "theme_color": "#0D131B",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
